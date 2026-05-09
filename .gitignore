@@ -216,3 +216,40 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Ingnore All Glyphs
+Glyphs/
+Big_Glpyhs/
+Meidum_Glyphs/
+Small_Glyphs/
+Pyramid_of_Unas/
+SphinxEyes_Final/
+SphinxProjectV2/
+SphinxProjectV3/
+notes/
+assets/
+_mosaic_test/
+_mosaic_test_2/
+
+# Inogre Jupyter Notebooks
+*.ipynb 
+
+#Ignore All PDF Files
+*.pdf
+
+# Ignore all JSON Files
+*.json  
+
+# Ignore all CSV Files
+*.csv
+
+# Ignore all TXT Files
+*.txt
+
+# Ignore parquet files
+*.parquet
+
+# Ignore all SQL Files
+*.sql
+
+
