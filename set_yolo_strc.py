@@ -170,6 +170,7 @@ names: {json.dumps(list(class_map.keys()), ensure_ascii=False)}
 
 
 if __name__ == "__main__":
+
     parser = argparse.ArgumentParser(
         description="SphinxEyes — Organiza dataset al formato YOLO"
     )
@@ -194,6 +195,7 @@ if __name__ == "__main__":
     output = Path(args.output)
 
     if not source.exists():
+        
         print(f"ERROR: '{source}' does not exist.")
         exit(1)
 
