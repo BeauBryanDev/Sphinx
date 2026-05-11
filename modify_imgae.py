@@ -29,7 +29,7 @@ def detect_background_color(img: np.ndarray) -> tuple:
 
 
 def resize_to_square(img: np.ndarray,
-                     target: int = 224,
+                     target: int = 640,
                      margin: int = 6) -> np.ndarray:
     """
     Scale image up to the largest possible size ( target -2 * margin ) constraint 
