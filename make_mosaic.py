@@ -13,12 +13,9 @@ import numpy as np
 VALID_EXT = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.webp'}
  
 # Spare Classes less frequence id 
-RARE_CLASSES = [
-    "a30", "d1", "d28", "d35", "d45", "e1", "e7",
-    "f26", "f32", "g7", "h1", "m20", "n29", "p1",
-    "p3", "r4", "v4", "w24", "z11"
-]
- 
+RARE_CLASSES =  ["cartouche","u15","w17","w19"]
+# pending for next run   : exactly 8 Gardiner classes per run 
+  
 # Class Map should match the Gardiner_names.txt file    
 GARDINER_NAMES = [
     "Aa1","a1","a2","a24","a30","a40","a42","a50","b1","cartouche",
