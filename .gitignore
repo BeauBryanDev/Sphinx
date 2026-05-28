@@ -231,8 +231,6 @@ assets/
 _mosaic_test/
 _mosaic_test_2/
 
-# Inogre Jupyter Notebooks
-*.ipynb 
 
 #Ignore All PDF Files
 *.pdf
