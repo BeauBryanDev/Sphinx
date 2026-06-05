@@ -250,4 +250,12 @@ _mosaic_test_2/
 # Ignore all SQL Files
 *.sql
 
+# Inogre all .pt files
+
+*.pt
+
+# Ignore all .onnx files
+
+*.onnx 
+
 
