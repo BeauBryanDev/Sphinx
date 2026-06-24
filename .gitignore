@@ -258,4 +258,24 @@ _mosaic_test_2/
 
 *.onnx 
 
+# Ignore artifacts
+artifacts/
 
+# Ignore all .onnx files
+*.onnx
+# Ignore all .pkl files
+*.pkl
+
+results_training_v3.png  
+Sphinx_Eyes_Mockup.png  
+test_image_vn5.png
+f13_65_bbox.jpg  
+image_2_test.jpg  
+Unas1c.jpg  
+wall_rock3.jpg  
+wrcok_wall.jpg
+glyph_wall.jpeg  
+rock_wall5.jpeg
+
+
+ScriptDoc.md
