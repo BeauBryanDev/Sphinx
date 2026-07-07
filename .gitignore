@@ -279,3 +279,4 @@ rock_wall5.jpeg
 
 # Ingore node_modules
 node_modules
+.env
