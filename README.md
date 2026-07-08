@@ -42,14 +42,22 @@ corrected, transliterated output:
 
 ```
 raw image
-  -> image enhancement (CLAHE + denoising + unsharp mask)
-  -> YOLOv11-Large ONNX detection (150 Gardiner classes)
-  -> layout classification (rows vs columns, geometry-driven)
+  -> optional image enhancement (CLAHE + denoising + unsharp mask; OFF by default)
+  -> YOLOv11-Large ONNX detection (150 Gardiner classes, letterbox resize @1024)
+  -> layout (rows vs columns) — user-supplied; geometric auto-detect as fallback only
   -> reading-order assembly (quadrat clustering)
   -> semantic correction (Viterbi over lexicon trie + bigram LM)
   -> cartouche interior reading (Needleman-Wunsch against royal-name database)
   -> structured JSON output (FastAPI)
+  -> LLM stage (GPT-4o): scholarly transliteration + English gloss
 ```
+
+Beyond the reading pipeline, the platform now includes three additional
+LLM-driven services: a two-stage web decode flow (detection and
+transliteration split across `/predict/` and `/transliterate/` for latency
+hiding), a domain-locked conversational agent (`/chat/`, Thot-Sphinx
+persona), and reverse translation from modern English into composed Middle
+Egyptian with Gardiner sign coding (`/reverse/`).
 
 The corpus used for the NLP layer is the BBAW Middle Egyptian corpus
 (`bbaw_clean.parquet`), which provides attested Gardiner code sequences for
@@ -157,14 +165,20 @@ confidence.
 
 | Parameter | Value | Description |
 |---|---|---|
-| `imgsz` | 1024 | Input resolution (stretch, not letterbox) |
+| `imgsz` | 1024 | Input resolution (letterbox) |
 | `conf_threshold` | 0.25 | Minimum confidence to retain a detection |
 | `iou_threshold` | 0.45 | NMS IoU threshold |
 | `max_detections` | 300 | Cap per image after NMS |
 
-Resize mode is **stretch** (not letterbox) throughout — this matches the
-training distribution, where all source images were squashed to 224x224 via
-`ETL/batch_resize.py`.
+Resize mode is **letterbox** throughout (2026-07-06 revision). V4 was trained
+at 1024 px through the Ultralytics loader, which letterboxes; A/B testing
+against raw Colab YOLO output proved letterbox reproduces it exactly (0
+missing / 0 extra detections) while stretch introduced spurious detections.
+The earlier stretch-everywhere rule dated from the V1-era 224x224 training
+distribution and is obsolete. For the same reason, `enhance()` preprocessing
+is disabled by default: on clean images it deletes real signs and
+hallucinates fakes; the presets remain available as an opt-in for genuinely
+degraded photographs.
 
 ---
 
@@ -206,11 +220,18 @@ signal.
 
 ### Layout detection (`layout_detector.py`)
 
-Layout (rows vs columns) is determined geometrically from the detections
-themselves, not from pixel heuristics. The voter considers cartouche aspect
-ratio, vertical band count, and sign aspect ratio distribution. The legacy
-pixel-level function `detect_layout(img)` is retained for callers that do
-not have detections available.
+Layout (rows vs columns) is **supplied by the caller** — the API makes it a
+required field. The geometric voter (cartouche aspect ratio, band count,
+sign aspect distribution) proved unreliable on real walls and survives only
+as a logged fallback when `pipeline.run(layout=None)` is called directly.
+The legacy pixel-level function `detect_layout(img)` is retained for callers
+that do not have detections available.
+
+Cross-line quadrat leakage is blocked by `QUADRAT_MAX_EXTENT=2.5`: a merged
+pair whose combined extent along the reading axis exceeds 2.5x the median
+sign size is rejected (a legitimate stacked pair measures ~2.2x; observed
+cross-line leaks ~2.9x). `CARTOUCHE_CONF` is 0.25 — real cartouches on
+weathered stone score as low as ~0.28.
 
 ### Reading-order assembly
 
@@ -321,7 +342,9 @@ throughout the pipeline.
 |---|---|---|---|---|
 | `Unas1c.jpg` | columns | 100 | 1.39 | 2/2 direct *wnjs* (E34 native) |
 | `image_2_test.jpg` | columns | 77 | 2.08 | 3/3 direct *wnjs* |
-| `glyph_wall.jpeg` | columns | 60 | 3.47 | 0 cartouches in scene |
+| `glyph_wall.jpeg` | columns | 60 | 3.47 | 0 cartouches in scene (negative control) |
+| `sandstone_wall.jpg` | rows (ltr) | 18 | — | 1/1 Thutmose III (*mn-xpr-ra*) |
+| `grand_glyphs.jpeg` | rows (rtl) | 63 | — | 1 detected @0.944, match refused (spelling `N5 W14 W22` not yet in database) |
 
 ---
 
@@ -334,21 +357,30 @@ throughout the pipeline.
 
 ```
 app/
-+-- main.py                     # FastAPI factory, CORS middleware, lifespan
++-- main.py                     # FastAPI factory, CORS middleware, exception handlers, lifespan
 +-- core/
-|   +-- config.py               # pydantic-settings: all paths and thresholds
+|   +-- config.py               # pydantic-settings: paths, thresholds, OPENAI_API_KEY, model
+|   +-- exception.py            # InferenceError -> 422; catch-all -> JSON 500 with error_id
 |   +-- lifespan.py             # artifact validation + SphinxPipeline construction
 +-- models/                     # Internal domain type wrappers
-+-- schemas/                    # Pydantic I/O contracts (API surface only)
++-- schemas/                    # Pydantic I/O contracts: predict, transliterations,
+|                               #   reverse_translation, corrections, cartouches
 +-- services/
 |   +-- sphinx_inference.py     # InferenceService.run() — pipeline call + schema mapping
+|   |                           #   + annotated-image JPEG encoding
+|   +-- transliteration_services.py  # GPT-4o Egyptologist transliteration (chunked)
+|   +-- sphinx_chat.py          # Thot-Sphinx conversational persona
+|   +-- reverse.py              # English -> Middle Egyptian composition (3-stage prompt)
 +-- utils/
 |   +-- image_utils.py          # decode_upload -> BGR ndarray, validation
 |   +-- post_process_utils.py   # low-level ONNX helpers (thin at Phase 5)
 +-- routers/
     +-- deps.py                 # get_pipeline(request) -> SphinxPipeline
-    +-- predict.py              # POST /predict
-    +-- health.py               # GET /health
+    +-- predict.py              # POST /predict/
+    +-- transliterate.py        # POST /transliterate/  (LLM-only second stage)
+    +-- chat.py                 # POST /chat/
+    +-- reverse.py              # POST /reverse/
+    +-- health.py               # GET /health, /health/live, /health/ready
 ```
 
 `pipeline.py` remains at the repository root. It is imported by
@@ -364,8 +396,15 @@ test. All domain scripts (`spatial_logic`, `sphinx_corrector`,
 |---|---|---|---|
 | `file` | `UploadFile` | required | Raw image (JPEG, PNG, WebP) |
 | `direction` | `str` | `rtl` | Reading direction: `rtl` or `ltr` |
-| `layout` | `str or null` | null | `rows`, `columns`, or auto-detect |
-| `preset` | `str` | `default` | Enhancement preset: `default`, `aggressive`, `gentle` |
+| `layout` | `str` | required | `rows` or `columns` — must be supplied by the user |
+| `preset` | `str` | `none` | Enhancement preset: `none`, `default`, `aggressive`, `gentle` |
+| `translate` | `bool` | `false` | Run the LLM transliteration stage in the same request |
+| context fields | `str` | `unknown` | `period`, `text_type`, `support`, `location_type`, `site`, `dynasty`, `kings_reign` |
+
+The response additionally carries `annotated_image` — a JPEG data URL of the
+input with YOLO-style bounding boxes (gold cartouches, green signs, grey
+unknowns, `class conf` labels) for in-browser display and client-side
+download, and `transliteration` when the LLM stage ran.
 
 Returns `PredictResponse` (JSON):
 
@@ -394,6 +433,31 @@ Returns `PredictResponse` (JSON):
   ]
 }
 ```
+
+**`POST /transliterate/`** — JSON. Stateless LLM-only second stage: the
+client echoes the detection output back (`codes`, `confidences`,
+`boundary_hints`, `cartouche_names`, `direction`, `layout`, `context`) and
+receives a `TransliterationOut` (per-chunk Leiden transliteration, English
+gloss, linguistic notes, confidence). Chunking cuts at physical line
+boundaries first, then at 20 signs. The system prompt encodes the V4
+confusion pairs and pipeline provenance; matched cartouches are passed as
+authoritative anchors. This split enables the frontend's latency-hiding
+flow: detection fires when the user picks a reading direction, and the
+Decode action only waits on the LLM.
+
+**`POST /chat/`** — JSON `{prompt, history}` -> `{reply, message_id}`.
+Conversational agent with the Thot-Sphinx persona (guardian of temple
+knowledge, factual Egyptology, hard off-topic refusal). Stateless; history
+travels with each request. 503 without an API key, 502 on upstream failure.
+
+**`POST /reverse/`** — JSON `{text, register}`. Reverse translation: modern
+English rendered into composed Middle Egyptian by a three-stage prompt
+(semantic normalization to the attested lexicon, composition with real
+grammar plus Leiden transliteration, Gardiner sign coding with phonetic
+complements and determinatives). Returns the flat code sequence, a per-word
+breakdown, and grammar notes. Output codes are regex-sanitized to canonical
+Gardiner form. Sign-level orthography is LLM-approximate; no dictionary
+cross-check yet.
 
 **`GET /health`** — Returns pipeline status, class count, and ONNX output
 shape. Used by container orchestrators as a liveness probe.
@@ -426,10 +490,11 @@ backgrounds, gold-toned accent colours, and hieroglyph-inspired typographic
 detail — referencing the visual palette of Middle Kingdom tomb and pyramid
 inscriptions. Design reference: `Sphinx_Eyes_Mockup.png` in the repo root.
 
-Current `package.json` references React 19 / Vite 7 / Tailwind 4. A full
-dependency downgrade and configuration rewrite is scheduled after the FastAPI
-backend is wired. The component structure and routing logic are complete and
-do not require changes.
+The stack downgrade (React 18.3 / Vite 5 / Tailwind 3.4 via PostCSS) and the
+full backend wiring are complete. The frontend implements the two-stage
+decode flow, renders detected signs as real Unicode hieroglyphs, and holds
+all page state in global Zustand stores so navigation between pages loses
+nothing.
 
 ### Stack
 
@@ -441,26 +506,53 @@ do not require changes.
 | Styling | Tailwind CSS | 3.4 |
 | Charts | Recharts | 2.x |
 | HTTP client | Axios | 1.x |
+| State | Zustand | 5.x |
+| Markdown | react-markdown | 10.x |
 
 ### Structure
 
 ```
 frontend/src/
-+-- api/           -- glyphApi.ts, chatApi.ts, analyticsApi.ts
-+-- components/    -- ChatPanel, GlyphDecoder, ActivityChart, layout/
-+-- hooks/         -- useGlyphDecoder, useChat, useAnalytics
-+-- pages/         -- HomePage, GlyphsPage, TransliterationPage, LearnPage
++-- api/           -- glyphApi.ts (predict + transliterate adapter),
+|                     chatApi.ts, reverseApi.ts, analyticsApi.ts
++-- components/    -- chat/ChatPanel, glyphs/{GlyphDecoder, GlyphWall,
+|                     SignConfidenceTable, SignFrequencyChart},
+|                     dashboard/ActivityChart, common/, layout/
++-- stores/        -- Zustand global stores: useChatStore, useGlyphStore,
+|                     useReverseStore (state survives page navigation)
++-- hooks/         -- useGlyphDecoder, useChat (thin store wrappers), useAnalytics
++-- pages/         -- LandingHero, ChatPage, GlyphsPage, Reverse, LearnPage
++-- utils/         -- gardinerUnicode.ts (Gardiner -> U+13000 glyph map,
+|                     generated from unicodedata; 148/148 model classes)
 +-- services/      -- http.ts (Axios instance, VITE_API_BASE_URL)
-+-- types/         -- GlyphDecodingResult, ChatMessage, UserProfile
-+-- assets/        -- UI imagery (Horus eyes, Sphinx, pyramid background)
++-- types/         -- mirrors backend contracts (PredictResponse,
+|                     TransliterationOut, ReverseTranslationOut, TextContext)
++-- assets/        -- UI imagery + fonts/NotoSansEgyptianHieroglyphs.woff2
+                      (self-hosted 390 KB hieroglyph-block subset)
 ```
 
-### Backend adapter gap
+### Feature summary
 
-`glyphApi.ts` currently calls `POST /v1/glyphs/decode` expecting
-`GlyphDecodingResult`. The backend serves `POST /predict` returning
-`PredictResponse`. The URL and response shape mapping must be implemented in
-`glyphApi.ts` at wiring time — not in any component.
+- **Glyphs page** — image upload, mandatory layout/direction selection
+  (picking a direction triggers background detection), mandatory
+  archaeological-context form (all fields default Unknown). The result is
+  presented in ordered sections: Gardiner codes grouped by physical line,
+  royal-cartouche identifications, Leiden transliteration, English gloss,
+  the YOLO-annotated image with a download action, and a Recharts
+  sign-frequency chart. The right column renders the decoded signs as
+  Unicode hieroglyphs in the wall's own geometry (columns stack vertically;
+  right-to-left reading places column 1 at the right edge), followed by a
+  per-detection confidence table (bars color-banded at 0.80 and 0.50;
+  displayed probabilities clamped to a 0.998 ceiling).
+- **SphinxChat** — full-height conversation panel, markdown rendering of
+  assistant replies, suggested-topic shortcuts wired to the shared store,
+  and a four-message rolling context window sent to the backend.
+- **Reverse page** — English input (300-character cap, register selection)
+  rendered as composed Middle Egyptian: golden hieroglyph runs, Leiden
+  transliteration, word-by-word breakdown, and the scribe's grammar notes.
+
+State persists across in-app navigation via Zustand but not across page
+reloads; durable persistence arrives with the Phase 6 database.
 
 ---
 
@@ -688,10 +780,17 @@ top-3 candidate distribution per anchor.
 | Phase | Item | Status |
 |---|---|---|
 | 1–4 | CV + spatial + NLP + cartouche layers | Complete |
-| 5 | FastAPI backend (`app/`) | In progress |
-| 5 | Frontend wiring (`glyphApi.ts` adapter) | Pending — after backend |
-| 5 | Frontend stack downgrade (React 18, Vite 4/5, Tailwind 3.4) | Pending |
-| 6 | PostgreSQL schema + async persistence | Pending |
-| 6 | GPT transliteration integration | Pending |
+| 5 | FastAPI backend (`app/`) | Complete |
+| 5 | Frontend wiring (`glyphApi.ts` adapter) | Complete |
+| 5 | Frontend stack downgrade (React 18, Vite 5, Tailwind 3.4) | Complete |
+| 5 | Inference fidelity (letterbox resize, enhancement off, user-supplied layout) | Complete — local ONNX matches Colab exactly |
+| 6 | GPT transliteration integration (`/transliterate/`, two-stage flow) | Complete |
+| 6 | Thot-Sphinx chat (`/chat/`) | Complete |
+| 6 | Reverse translation English -> Middle Egyptian (`/reverse/`) | Complete |
+| 6 | Annotated detection image + download | Complete |
+| 6 | Unicode hieroglyph rendering (self-hosted Noto font, 148-class map) | Complete |
+| 6 | Client state management (Zustand stores, cross-page) | Complete |
+| 6 | PostgreSQL schema + async persistence (decode history, chat sessions, auth) | Pending |
 | 7 | Real-image integration test (labeled fixture, assert transliteration) | Final gate |
-| — | V5 training (address `d56`, `n23`, `i1` low-recall classes) | Deferred |
+| — | `royal_names.json`: add `N5 W14 W22` spelling (grand_glyphs cartouche) | Pending — awaiting identification of the king |
+| — | V5 training (address `d56`, `n23`, `i1`; confusions G1/G5, N5/N33/Aa1, W14) | Deferred |
