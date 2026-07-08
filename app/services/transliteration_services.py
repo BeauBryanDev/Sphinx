@@ -33,9 +33,7 @@ from app.schemas.transliterations import (
 logger = logging.getLogger('sphinxeyes.transliteration')
 
 
-# ---------------------------------------------------------------------------
 # Chunking (port of segement_into_chunck.segment_into_chunks)
-# ---------------------------------------------------------------------------
 
 def segment_into_chunks(
     codes           : list[str],
@@ -66,9 +64,7 @@ def segment_into_chunks(
     return chunks
 
 
-# ---------------------------------------------------------------------------
 # Prompt (port of prompt2GPT.build_egyptologist_prompt)
-# ---------------------------------------------------------------------------
 
 # The role/methodology half of the prompt. Static -> sent as the system
 # message (also lets OpenAI cache it across the per-chunk calls).

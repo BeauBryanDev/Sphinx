@@ -1,8 +1,8 @@
 // ============================================================
-// Chat API — endpoint wrappers for SphinxChat
+// Chat API — endpoint wrappers for SphinxChat (Thot-Sphinx)
 // ============================================================
 
-import { request } from "@/services/http";
+import http from "@/services/http";
 import type { ChatMessage } from "@/types";
 
 export interface SendMessagePayload {
@@ -15,23 +15,27 @@ export interface SendMessageResponse {
   messageId: string;
 }
 
-/** Send a prompt to the AI chat endpoint. */
-export const sendChatMessage = (
+const CHAT_TIMEOUT_MS = 60_000;
+
+/** Send a prompt to Thot-Sphinx. Backend returns the reply bare (no envelope). */
+export const sendChatMessage = async (
   payload: SendMessagePayload,
 ): Promise<SendMessageResponse> => {
-  return request<SendMessageResponse>({
-    method: "POST",
-    url: "/v1/chat/messages",
-    data: payload,
-  });
+  const { data } = await http.post<{ reply: string; message_id: string }>(
+    "/chat/",
+    { prompt: payload.prompt, history: payload.history ?? [] },
+    { timeout: CHAT_TIMEOUT_MS },
+  );
+  return { reply: data.reply, messageId: data.message_id };
 };
 
-/** Fetch conversation history. */
-export const fetchChatHistory = (
-  sessionId: string,
+/**
+ * Fetch conversation history.
+ * NOT IMPLEMENTED on the backend yet (Phase 6, needs PostgreSQL) —
+ * conversations are client-side only; returns an empty list.
+ */
+export const fetchChatHistory = async (
+  _sessionId: string,
 ): Promise<ChatMessage[]> => {
-  return request<ChatMessage[]>({
-    method: "GET",
-    url: `/v1/chat/sessions/${sessionId}/messages`,
-  });
+  return [];
 };

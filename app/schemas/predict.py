@@ -24,3 +24,6 @@ class PredictResponse(BaseModel):
     # LLM stage (Phase 6). None when translate=false was requested;
     # populated with error field set when the LLM stage failed.
     transliteration : Optional[TransliterationOut] = None
+    # YOLO-style annotated image (boxes + 'class conf' labels) as a
+    # JPEG data URL, ready for <img src> and client-side download.
+    annotated_image : Optional[str] = None

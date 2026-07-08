@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import base64
 from typing import Optional
 
+import cv2
 import numpy as np
 
 from app.schemas.cartouches import CartoucheOut
@@ -39,8 +41,11 @@ class InferenceService:
             layout      = layout,
             use_enhance = preset != 'none',
             preset      = preset if preset != 'none' else 'default',
+            annotate    = True,
         )
         response = self._map(raw)
+        response.annotated_image = self._encode_annotated(
+            raw.get('annotated_bgr'))
 
         if translate:
             response.transliteration = TransliterationService().transliterate(
@@ -50,6 +55,16 @@ class InferenceService:
 
  
     # Private mapping helpers
+
+    @staticmethod
+    def _encode_annotated(bgr: Optional[np.ndarray]) -> Optional[str]:
+        """Annotated ndarray -> JPEG data URL (None if unavailable)."""
+        if bgr is None:
+            return None
+        ok, buf = cv2.imencode('.jpg', bgr, [cv2.IMWRITE_JPEG_QUALITY, 88])
+        if not ok:
+            return None
+        return 'data:image/jpeg;base64,' + base64.b64encode(buf).decode('ascii')
 
     @staticmethod
     def _map_correction(c: dict) -> CorrectionOut:

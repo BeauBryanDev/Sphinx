@@ -17,13 +17,13 @@ export const HomePage = () => {
   return (
     <div className="space-y-6">
       {/* Hero banner */}
-      <section className="relative overflow-hidden rounded-xl border border-amber-700/40 shadow-[0_10px_40px_rgba(0,0,0,0.45)]">
+      <section className="relative overflow-hidden rounded-2xl border-2 border-amber-500/60 bg-stone-950 shadow-[0_10px_40px_rgba(0,0,0,0.45)]">
         {/* Sphinx background */}
         <img
           src={sphinxBackground}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 h-full w-full object-cover select-none"
+          className="absolute inset-0 h-full w-full object-cover object-center select-none"
           draggable={false}
         />
         {/* Legibility overlay */}
@@ -33,7 +33,7 @@ export const HomePage = () => {
           <img
             src={pharaohMask}
             alt="SphinxEyes pharaoh emblem"
-            className="h-24 w-auto drop-shadow-[0_4px_18px_rgba(180,120,30,0.55)] select-none md:h-28"
+            className="h-32 w-auto drop-shadow-[0_4px_18px_rgba(180,120,30,0.55)] select-none md:h-40"
             draggable={false}
           />
           <h1 className="mt-4 text-4xl font-black tracking-[0.15em] text-amber-300 drop-shadow md:text-5xl">

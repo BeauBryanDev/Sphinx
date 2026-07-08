@@ -2,14 +2,68 @@
 // <GlyphDecoder /> — image upload + transliteration result
 // ============================================================
 
-import { useCallback, useRef, type DragEvent, type ChangeEvent } from "react";
+import {
+  useCallback,
+  useRef,
+  type DragEvent,
+  type ChangeEvent,
+} from "react";
 import { Card, Button } from "@/components/common";
-import { useGlyphDecoder } from "@/hooks/useGlyphDecoder";
+import {
+  useGlyphDecoder,
+  type UseGlyphDecoderReturn,
+} from "@/hooks/useGlyphDecoder";
 import { formatConfidence } from "@/utils/formatters";
+import { SignFrequencyChart } from "./SignFrequencyChart";
 
-export const GlyphDecoder = () => {
-  const { image, result, isLoading, error, setImage, clearImage, decode } =
-    useGlyphDecoder();
+// Controlled vocabularies — must match app/schemas/transliterations.py.
+// "unknown" first = default, for the tourist who knows nothing.
+const PERIODS = [
+  "unknown", "old_kingdom", "first_intermediate", "middle_kingdom",
+  "second_intermediate", "new_kingdom", "third_intermediate",
+  "late_period", "ptolemaic", "roman",
+];
+const TEXT_TYPES = [
+  "unknown", "stela", "temple_wall", "tomb_wall", "papyrus",
+  "sarcophagus", "obelisk", "statue", "offering_table", "pyramid_texts",
+];
+const SUPPORTS = [
+  "unknown", "limestone", "sandstone", "granite", "papyrus",
+  "wood", "plaster", "faience", "metal",
+];
+const LOCATION_TYPES = [
+  "unknown", "pyramid", "temple", "tomb", "museum", "open_site",
+];
+
+const label = (v: string) =>
+  v === "unknown" ? "Unknown" : v.replace(/_/g, " ");
+
+interface GlyphDecoderProps {
+  /** Share decoder state with sibling panels (e.g. <GlyphWall />). */
+  controller?: UseGlyphDecoderReturn;
+}
+
+export const GlyphDecoder = ({ controller }: GlyphDecoderProps = {}) => {
+  // Hooks must run unconditionally; the internal instance is simply
+  // unused when the page supplies a shared controller.
+  const internal = useGlyphDecoder();
+  const {
+    image,
+    result,
+    error,
+    direction,
+    layout,
+    context,
+    isDetecting,
+    isTranslating,
+    selectDirection,
+    setLayout,
+    setContext,
+    setImage,
+    clearImage,
+    reset,
+    decode,
+  } = controller ?? internal;
   const inputRef = useRef<HTMLInputElement>(null);
   const dragActiveRef = useRef(false);
 
@@ -68,11 +122,16 @@ export const GlyphDecoder = () => {
 
         {image ? (
           <div className="flex w-full flex-col items-center gap-3">
-            <img
-              src={image.preview}
-              alt="Uploaded hieroglyph preview"
-              className="max-h-48 rounded border border-amber-700/50 object-contain shadow"
-            />
+            <div className="relative overflow-hidden rounded">
+              <img
+                src={image.preview}
+                alt="Uploaded hieroglyph preview"
+                className="max-h-48 rounded border border-amber-700/50 object-contain shadow"
+              />
+              {isTranslating && (
+                <div className="scan-overlay pointer-events-none absolute inset-0" />
+              )}
+            </div>
             <p className="text-xs text-amber-300/80">{image.file.name}</p>
             <button
               onClick={(e) => {
@@ -97,30 +156,223 @@ export const GlyphDecoder = () => {
         )}
       </div>
 
+      {/* Reading options — layout is required by the backend */}
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div>
+          <p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-amber-400/80">
+            Layout
+          </p>
+          <div className="flex overflow-hidden rounded-md border border-amber-700/60">
+            {(["rows", "columns"] as const).map((l) => (
+              <button
+                key={l}
+                onClick={() => setLayout(l)}
+                className={`flex-1 px-2 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors ${
+                  layout === l
+                    ? "bg-amber-600 text-stone-950"
+                    : "bg-stone-900/60 text-amber-300/70 hover:bg-amber-900/40"
+                }`}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-amber-400/80">
+            Direction {isDetecting && (
+              <span className="ml-1 animate-pulse normal-case tracking-normal text-amber-500/90">
+                — reading the wall…
+              </span>
+            )}
+          </p>
+          <div className="flex overflow-hidden rounded-md border border-amber-700/60">
+            {(["rtl", "ltr"] as const).map((d) => (
+              <button
+                key={d}
+                onClick={() => selectDirection(d)}
+                className={`flex-1 px-2 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors ${
+                  direction === d
+                    ? "bg-amber-600 text-stone-950"
+                    : "bg-stone-900/60 text-amber-300/70 hover:bg-amber-900/40"
+                }`}
+              >
+                {d === "rtl" ? "Right → Left" : "Left → Right"}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Archaeological context — MANDATORY. It feeds the LLM stage;
+          a naive tourist just leaves every select on "Unknown". */}
+      <div className="mt-4">
+        <div className="flex w-full items-center justify-between rounded-t-md border border-b-0 border-amber-700/50 bg-stone-900/60 px-3 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-amber-300/90">
+          <span>𓊹 Archaeological context</span>
+          <span className="rounded bg-amber-600/20 px-2 py-0.5 text-[9px] tracking-widest text-amber-400">
+            required
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 rounded-b-md border border-amber-700/40 bg-stone-900/40 p-3 sm:grid-cols-2">
+            {(
+              [
+                ["Period", "period", PERIODS],
+                ["Text type", "text_type", TEXT_TYPES],
+                ["Physical support", "support", SUPPORTS],
+                ["Location type", "location_type", LOCATION_TYPES],
+              ] as const
+            ).map(([title, key, options]) => (
+              <label key={key} className="block">
+                <span className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-amber-400/80">
+                  {title}
+                </span>
+                <select
+                  value={context[key] ?? "unknown"}
+                  onChange={(e) => setContext({ [key]: e.target.value })}
+                  className="w-full rounded border border-amber-700/50 bg-stone-950 px-2 py-1.5 text-xs capitalize text-amber-100"
+                >
+                  {options.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {label(opt)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+            {(
+              [
+                ["Site / location", "site", "e.g. Karnak, Saqqara"],
+                ["Dynasty", "dynasty", "e.g. IV, XVIII"],
+                ["King's reign", "kings_reign", "e.g. Thutmose III"],
+              ] as const
+            ).map(([title, key, placeholder]) => (
+              <label key={key} className="block">
+                <span className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-amber-400/80">
+                  {title}
+                </span>
+                <input
+                  type="text"
+                  value={context[key] ?? ""}
+                  placeholder={placeholder}
+                  onChange={(e) => setContext({ [key]: e.target.value })}
+                  className="w-full rounded border border-amber-700/50 bg-stone-950 px-2 py-1.5 text-xs text-amber-100 placeholder:text-amber-600/50"
+                />
+              </label>
+            ))}
+            <p className="text-[10px] leading-relaxed text-amber-500/70 sm:col-span-2">
+              Don't know something? Just leave it as Unknown — the reading
+              still works. Every detail you add improves the translation.
+            </p>
+        </div>
+      </div>
+
       {/* Result block */}
       <div className="mt-5 rounded-md border border-amber-700/50 bg-stone-900/60 p-5 text-center">
         <p className="mb-3 text-xs uppercase tracking-[0.3em] text-amber-400/80">
           — Transliteration Result —
         </p>
         {result ? (
-          <>
-            <div className="mb-3 flex flex-wrap items-center justify-center gap-3 text-3xl text-amber-300">
-              {result.detectedGlyphs.map((g, i) => (
-                <span key={i} title={g}>
-                  {g}
-                </span>
+          <div className="text-left">
+            {/* 1. Gardiner codes in spatial reading order, one block per
+                   physical line — like the bounding-box coordinate view. */}
+            <p className="mb-2 text-[10px] uppercase tracking-[0.25em] text-amber-500/80">
+              Gardiner codes · spatial order ·{" "}
+              {result.layout === "columns" ? "columns" : "rows"} ·{" "}
+              {result.direction === "rtl" ? "right → left" : "left → right"}
+            </p>
+            <div className="space-y-1.5 rounded border border-amber-700/40 bg-stone-950/60 p-3">
+              {result.lines.map((line, i) => (
+                <div key={i} className="flex items-baseline gap-2">
+                  <span className="w-14 shrink-0 font-mono text-[10px] uppercase tracking-wider text-amber-600/80">
+                    {result.layout === "columns" ? "col" : "row"} {i + 1}
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {line.map((code, j) => (
+                      <span
+                        key={j}
+                        className={`rounded px-1.5 py-0.5 font-mono text-[11px] ${
+                          code === "Unknown"
+                            ? "border border-stone-600/60 bg-stone-800/60 text-stone-400"
+                            : "border border-amber-700/50 bg-amber-950/60 text-amber-200"
+                        }`}
+                        title={code === "Unknown" ? "Undetected sign (lacuna)" : code}
+                      >
+                        {code === "Unknown" ? "?" : code}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
-            <p className="font-serif text-lg italic text-amber-200">
-              {result.transliteration}
+
+            {/* 2. Cartouches — lexicon-verified royal names. */}
+            {result.royalNames.length > 0 && (
+              <div className="mt-3 rounded border border-amber-600/50 bg-amber-950/40 p-3">
+                <p className="mb-1.5 text-[10px] uppercase tracking-[0.25em] text-amber-500/80">
+                  𓍷 Royal cartouches
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {result.royalNames.map((name, i) => (
+                    <span
+                      key={i}
+                      className="rounded-full border border-amber-500/60 bg-amber-900/50 px-3 py-1 text-xs font-semibold text-amber-100"
+                    >
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 3. Transliteration. */}
+            <div className="mt-3 rounded border border-amber-700/40 bg-stone-950/60 p-3">
+              <p className="mb-1.5 text-[10px] uppercase tracking-[0.25em] text-amber-500/80">
+                Transliteration
+              </p>
+              <p className="font-serif text-base italic leading-relaxed text-amber-200">
+                {result.transliteration}
+              </p>
+            </div>
+
+            {/* 4. English gloss — below everything; scrolling is fine. */}
+            <div className="mt-3 rounded border border-amber-700/40 bg-stone-950/60 p-3">
+              <p className="mb-1.5 text-[10px] uppercase tracking-[0.25em] text-amber-500/80">
+                English translation · gloss
+              </p>
+              <p className="text-sm leading-relaxed text-amber-100/90">
+                “{result.translation}”
+              </p>
+            </div>
+
+            {/* 5. YOLO-annotated detection image + download. */}
+            {result.annotatedImage && (
+              <div className="mt-3 rounded border border-amber-700/40 bg-stone-950/60 p-3">
+                <p className="mb-1.5 text-[10px] uppercase tracking-[0.25em] text-amber-500/80">
+                  Detections on your image
+                </p>
+                <img
+                  src={result.annotatedImage}
+                  alt="Detected hieroglyphs with bounding boxes and confidence labels"
+                  className="w-full rounded border border-amber-800/50 shadow"
+                />
+                <a
+                  href={result.annotatedImage}
+                  download="sphinxeyes_detections.jpg"
+                  className="mt-2 flex items-center justify-center gap-2 rounded-md border border-amber-600/60 bg-amber-900/40 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-amber-200 transition-colors hover:bg-amber-800/50"
+                >
+                  ⤓ Download annotated image
+                </a>
+              </div>
+            )}
+
+            {/* 6. Sign-frequency bar chart — basic detection stats. */}
+            <SignFrequencyChart result={result} />
+
+            <p className="mt-3 text-center text-[10px] uppercase tracking-[0.25em] text-amber-500/80">
+              Detector confidence {formatConfidence(result.confidence)}
             </p>
-            <p className="mt-2 text-sm text-amber-100/90">
-              “{result.translation}”
-            </p>
-            <p className="mt-3 text-[10px] uppercase tracking-[0.25em] text-amber-500/80">
-              Confidence {formatConfidence(result.confidence)}
-            </p>
-          </>
+          </div>
         ) : (
           <>
             <div className="mb-3 flex flex-wrap items-center justify-center gap-3 text-3xl text-amber-500/60">
@@ -147,17 +399,27 @@ export const GlyphDecoder = () => {
         </p>
       )}
 
-      <div className="mt-5">
+      <div className="mt-5 flex gap-3">
         <Button
-          className="w-full"
+          className="flex-1"
           size="lg"
           onClick={decode}
-          isLoading={isLoading}
-          disabled={!image}
+          isLoading={isTranslating}
+          disabled={!image || !direction}
           leftIcon="𓂀"
         >
-          Decode Glyphs
+          {direction ? "Decode Glyphs" : "Pick a reading direction first"}
         </Button>
+        {(image || result) && (
+          <button
+            onClick={reset}
+            disabled={isTranslating}
+            title="Clear everything and start over"
+            className="rounded-md border border-amber-700/60 bg-stone-900/60 px-4 text-xs font-semibold uppercase tracking-wide text-amber-300/90 transition-colors hover:bg-amber-900/40 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            ↺ Reset
+          </button>
+        )}
       </div>
     </Card>
   );

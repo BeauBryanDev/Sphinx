@@ -11,6 +11,8 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
   icon?: ReactNode;
   footer?: ReactNode;
   padded?: boolean;
+  /** Extra classes for the body wrapper (e.g. flex-1 for full-height panels). */
+  bodyClassName?: string;
 }
 
 export const Card = ({
@@ -19,6 +21,7 @@ export const Card = ({
   icon,
   footer,
   padded = true,
+  bodyClassName,
   className,
   children,
   ...rest
@@ -26,7 +29,7 @@ export const Card = ({
   return (
     <div
       className={cn(
-        "relative rounded-lg border border-amber-700/60 bg-gradient-to-b from-amber-950/80 to-stone-900/80 shadow-[0_8px_30px_rgba(0,0,0,0.45)]",
+        "relative rounded-2xl border-2 border-amber-500/70 bg-gradient-to-b from-amber-950/80 to-stone-900/80 shadow-[0_8px_30px_rgba(0,0,0,0.45)]",
         className,
       )}
       {...rest}
@@ -54,7 +57,7 @@ export const Card = ({
         </header>
       )}
 
-      <div className={cn(padded && "p-6")}>{children}</div>
+      <div className={cn(padded && "p-6", bodyClassName)}>{children}</div>
 
       {footer && (
         <footer className="border-t border-amber-700/40 px-6 py-4">

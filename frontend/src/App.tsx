@@ -10,7 +10,7 @@ import {
   GlyphsPage,
   LearnPage,
   ProfilePage,
-  TransliterationPage,
+  ReversePage,
 } from "@/pages";
 import LandingHero from "@/pages/LandingHero";
 import type { PageKey } from "@/types";
@@ -20,7 +20,7 @@ const PAGE_REGISTRY: Record<PageKey, React.ComponentType> = {
   home: LandingHero,
   chat: ChatPage,
   glyphs: GlyphsPage,
-  transliteration: TransliterationPage,
+  transliteration: ReversePage,
   learn: LearnPage,
   profile: ProfilePage,
 };
@@ -53,7 +53,7 @@ const AppShell = () => {
 
       <div className="relative z-10 flex min-w-0 flex-1 flex-col">
         <Header />
-        <main className="flex-1 overflow-y-auto px-4 py-6 pb-24 sm:px-6 sm:py-8 lg:pb-8">
+        <main className="flex-1 overflow-y-auto px-5 py-6 pb-24 sm:px-8 sm:py-8 lg:px-12 lg:pb-8 xl:px-16">
           <ActivePage />
         </main>
         {/* Desktop footer; mobile uses the bottom tab bar instead */}

@@ -42,8 +42,15 @@ class Settings(BaseSettings):
  
     cors_origins     : list[str] = ['*']
  
+    # OpenAI transliteration (Phase 6)
+    # openai_api_key reads OPENAI_API_KEY from .env; empty = feature disabled
+    openai_api_key      : str   = ''
+    openai_model        : str   = 'gpt-4o'
+    translit_max_signs  : int   = 20     # max Gardiner codes per LLM chunk
+    translit_temperature: float = 0.1    # low — consistency over creativity
+
     # Metadata
- 
+
     pipeline_version : str   = 'v4'
  
     model_config = SettingsConfigDict(

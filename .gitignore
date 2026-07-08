@@ -231,6 +231,11 @@ assets/
 _mosaic_test/
 _mosaic_test_2/
 
+# Ignore all images png, jpg, jpeg, gif
+*.png
+*.jpg
+*.jpeg
+*.gif
 
 #Ignore All PDF Files
 *.pdf
@@ -240,9 +245,6 @@ _mosaic_test_2/
 
 # Ignore all CSV Files
 *.csv
-
-# Ignore all TXT Files
-*.txt
 
 # Ignore parquet files
 *.parquet
@@ -277,6 +279,20 @@ wrcok_wall.jpg
 glyph_wall.jpeg  
 rock_wall5.jpeg
 
+CLAUDE.md 
+agent_token.txt
+assets/
+artifacts/
+Backups/
+Glyphs/
+images/
+mosaic/
+notes/
+SphinxEyes_Final/
+SphinxProjectV2/
+SphinxProjectV3/
+TrainingV2/
+TrainingV3/
 # Ingore node_modules
 node_modules
 .env

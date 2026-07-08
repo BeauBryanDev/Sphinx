@@ -6,6 +6,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Self-hosted hieroglyph font (Google's woff2 subset, 390 KB, only
+   U+13000-143FA) — works offline, no fonts.gstatic.com dependency. */
+@font-face {
+  font-family: "Noto Sans Egyptian Hieroglyphs";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./assets/fonts/NotoSansEgyptianHieroglyphs.woff2") format("woff2");
+  unicode-range: U+13000-13455, U+13460-143FA;
+}
+
 html,
 body,
 #root {
@@ -26,6 +37,72 @@ body {
 .font-serif {
   font-family: "Cinzel", "Trajan Pro", Georgia, "Times New Roman", serif;
   letter-spacing: 0.04em;
+}
+
+/* Real hieroglyphs (Unicode U+13000 block) — JSesh-like rendering */
+.font-hieroglyph {
+  font-family: "Noto Sans Egyptian Hieroglyphs", "Segoe UI Historic",
+    "Aegyptus", sans-serif;
+  line-height: 1;
+}
+
+/* Markdown answers from Thot-Sphinx (Tailwind preflight strips the
+   default list/heading styles, so restore what chat replies need). */
+.chat-markdown > * + * {
+  margin-top: 0.6em;
+}
+.chat-markdown strong {
+  color: #fcd34d;
+  font-weight: 600;
+}
+.chat-markdown em {
+  color: #fde68a;
+}
+.chat-markdown h1,
+.chat-markdown h2,
+.chat-markdown h3,
+.chat-markdown h4 {
+  font-family: "Cinzel", Georgia, serif;
+  color: #fbbf24;
+  font-size: 1.05em;
+  font-weight: 600;
+}
+.chat-markdown ul {
+  list-style: disc;
+  padding-left: 1.4em;
+}
+.chat-markdown ol {
+  list-style: decimal;
+  padding-left: 1.4em;
+}
+.chat-markdown li + li {
+  margin-top: 0.25em;
+}
+.chat-markdown blockquote {
+  border-left: 3px solid rgba(217, 119, 6, 0.6);
+  padding-left: 0.8em;
+  font-style: italic;
+  color: #fde68a;
+}
+.chat-markdown code {
+  background: rgba(120, 53, 15, 0.35);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-size: 0.9em;
+}
+.chat-markdown a {
+  color: #fbbf24;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Golden glyph treatment for the decoded wall */
+.glyph-gold {
+  background: linear-gradient(180deg, #fde68a 0%, #f59e0b 55%, #b45309 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.55));
 }
 
 /* Custom scrollbar */
@@ -57,4 +134,32 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* Golden scanning animation — shown ONLY while the LLM transliteration
+   (stage 2) is in flight, over the uploaded image preview. */
+.scan-overlay::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -30%;
+  height: 30%;
+  background: linear-gradient(
+    180deg,
+    rgba(251, 191, 36, 0) 0%,
+    rgba(251, 191, 36, 0.35) 45%,
+    rgba(253, 230, 138, 0.85) 50%,
+    rgba(251, 191, 36, 0.35) 55%,
+    rgba(251, 191, 36, 0) 100%
+  );
+  box-shadow: 0 0 24px 6px rgba(251, 191, 36, 0.35);
+  animation: scan-sweep 1.6s ease-in-out infinite;
+}
+.scan-overlay {
+  background: rgba(120, 53, 15, 0.15);
+}
+@keyframes scan-sweep {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(433%); }
 }

@@ -3,8 +3,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
  
 from app.core.config import settings
+from app.core.exception import register_exception_handlers
 from app.core.lifespan import lifespan
-from app.routers import predict, health
+from app.routers import predict, health, transliterate, chat, reverse
  
  
 def create_app() -> FastAPI:
@@ -27,9 +28,14 @@ def create_app() -> FastAPI:
         allow_headers     = ['*'],
     )
  
+    register_exception_handlers(app)
+
     # Routers
     app.include_router(health.router)
     app.include_router(predict.router)
+    app.include_router(transliterate.router)
+    app.include_router(chat.router)
+    app.include_router(reverse.router)
  
     return app
  

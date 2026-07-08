@@ -51,7 +51,7 @@ const HorusDivider = () => (
       src={horusEye}
       alt=""
       aria-hidden="true"
-      className="h-8 w-auto opacity-90 select-none"
+      className="h-12 w-auto opacity-90 select-none"
       draggable={false}
     />
     <span className="h-px w-16 bg-gradient-to-l from-transparent to-amber-600/60" />
@@ -63,12 +63,12 @@ export const LandingHero = () => {
   return (
     <div className="space-y-8">
       {/* Hero banner */}
-      <section className="relative overflow-hidden rounded-xl border border-amber-700/40 shadow-[0_10px_40px_rgba(0,0,0,0.45)]">
+      <section className="relative overflow-hidden rounded-2xl border-2 border-amber-500/60 bg-stone-950 shadow-[0_10px_40px_rgba(0,0,0,0.45)]">
         <img
           src={sphinxBackground}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 h-full w-full object-cover select-none"
+          className="absolute inset-0 h-full w-full object-cover object-center select-none"
           draggable={false}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-stone-950/70 via-stone-950/45 to-stone-950/85" />
@@ -77,7 +77,7 @@ export const LandingHero = () => {
           <img
             src={pharaohMask}
             alt="SphinxEyes pharaoh emblem"
-            className="h-24 w-auto drop-shadow-[0_4px_18px_rgba(180,120,30,0.55)] select-none md:h-32"
+            className="h-32 w-auto drop-shadow-[0_4px_18px_rgba(180,120,30,0.55)] select-none md:h-44"
             draggable={false}
           />
           <h1 className="mt-4 text-4xl font-black tracking-[0.15em] text-amber-300 drop-shadow md:text-6xl">
@@ -106,7 +106,7 @@ export const LandingHero = () => {
             src={horusEye}
             alt=""
             aria-hidden="true"
-            className="h-10 w-auto opacity-90 select-none"
+            className="h-14 w-auto opacity-90 select-none"
             draggable={false}
           />
         }

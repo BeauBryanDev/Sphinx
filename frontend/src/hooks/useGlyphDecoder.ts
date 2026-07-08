@@ -1,65 +1,22 @@
 // ============================================================
-// useGlyphDecoder — stateful hook for the hieroglyph upload flow
+// useGlyphDecoder — hieroglyph upload/decode flow hook
+//
+// Now a thin wrapper over the global Zustand store, so the
+// uploaded image, background detection and decode result survive
+// page navigation. Same interface as the old useState
+// implementation — components are unchanged.
+//
+// Two-stage latency-hiding flow (implemented in the store):
+//   1. picking a reading direction FIRES DETECTION in the
+//      background while the user fills the context form;
+//   2. "Decode Glyphs" awaits it, then calls /transliterate/
+//      (only this LLM stage shows the scanning animation).
 // ============================================================
 
-import { useCallback, useState } from "react";
-import { decodeGlyphs } from "@/api/glyphApi";
-import type { GlyphDecodingResult, UploadedImage } from "@/types";
+import { useGlyphStore, type GlyphStore } from "@/stores";
 
-export interface UseGlyphDecoderReturn {
-  image: UploadedImage | null;
-  result: GlyphDecodingResult | null;
-  isLoading: boolean;
-  error: string | null;
-  setImage: (file: File) => void;
-  clearImage: () => void;
-  decode: () => Promise<void>;
-}
+export type UseGlyphDecoderReturn = GlyphStore;
 
-const readAsDataUrl = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-
-export const useGlyphDecoder = (): UseGlyphDecoderReturn => {
-  const [image, setImageState] = useState<UploadedImage | null>(null);
-  const [result, setResult] = useState<GlyphDecodingResult | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const setImage = useCallback(async (file: File) => {
-    const preview = await readAsDataUrl(file);
-    setImageState({ file, preview });
-    setResult(null);
-    setError(null);
-  }, []);
-
-  const clearImage = useCallback(() => {
-    setImageState(null);
-    setResult(null);
-    setError(null);
-  }, []);
-
-  const decode = useCallback(async () => {
-    if (!image) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await decodeGlyphs(image.file);
-      setResult(res);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Decoding failed.";
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [image]);
-
-  return { image, result, isLoading, error, setImage, clearImage, decode };
-};
+export const useGlyphDecoder = (): UseGlyphDecoderReturn => useGlyphStore();
 
 export default useGlyphDecoder;

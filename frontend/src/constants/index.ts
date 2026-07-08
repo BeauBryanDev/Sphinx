@@ -19,7 +19,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "home", label: "Home", icon: "🏠" },
   { key: "chat", label: "SphinxChat", icon: "💬" },
   { key: "glyphs", label: "Glyphs", icon: "👁" },
-  { key: "transliteration", label: "Transliteration", icon: "𓂀" },
+  { key: "transliteration", label: "Reverse", icon: "𓆓" },
   { key: "learn", label: "Learn More", icon: "☥" },
   { key: "profile", label: "Profile", icon: "👤" },
 ];
@@ -51,8 +51,8 @@ export const FEATURES: FeatureCard[] = [
     icon: "𓂀",
   },
   {
-    title: "Transliteration",
-    description: "Convert hieroglyphic text into readable phonetic translations.",
+    title: "Reverse Translation",
+    description: "Write in English and see it composed in Middle Egyptian hieroglyphs.",
     icon: "𓋹",
   },
 ];

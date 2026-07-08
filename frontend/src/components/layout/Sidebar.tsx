@@ -44,7 +44,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
         <img
           src={sphinxMaster}
           alt="SphinxEyes pharaoh emblem"
-          className="h-20 w-auto drop-shadow-[0_4px_14px_rgba(180,120,30,0.45)] select-none"
+          className="h-28 w-auto drop-shadow-[0_4px_14px_rgba(180,120,30,0.45)] select-none"
           draggable={false}
         />
         <h1 className="mt-3 text-3xl font-black tracking-wider text-amber-300 drop-shadow">
@@ -96,7 +96,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
           src={scarab}
           alt=""
           aria-hidden="true"
-          className="h-14 w-auto opacity-90 select-none"
+          className="h-20 w-auto opacity-90 select-none"
           draggable={false}
         />
         <div className="mt-2 text-[10px] uppercase tracking-[0.3em]">

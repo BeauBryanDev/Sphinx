@@ -5,6 +5,6 @@
 export { HomePage } from "./HomePage";
 export { ChatPage } from "./ChatPage";
 export { GlyphsPage } from "./GlyphsPage";
-export { TransliterationPage } from "./TransliterationPage";
+export { ReversePage } from "./Reverse";
 export { LearnPage } from "./LearnPage";
 export { ProfilePage } from "./ProfilePage";

@@ -1,0 +1,46 @@
+# SphinxEyes Backend — requirements.txt
+# Pinned to versions installed in the Anaconda Python 3.13 environment.
+# Run: pip install -r requirements.txt
+
+# FastAPI core
+fastapi==0.135.3
+uvicorn[standard]==0.44.0
+python-multipart==0.0.24
+pydantic==2.12.5
+pydantic-settings==2.12.0
+
+# ONNX inference
+onnx==1.22.0
+onnxruntime==1.24.4             # pin exact: CPU provider, ABI-sensitive
+
+# Image processing
+opencv-python-headless==4.13.0.92
+numpy==2.3.5
+pillow==12.0.0
+
+# Data and lexicon
+pandas==2.3.3
+pyarrow==21.0.0                 # parquet engine for bbaw_clean.parquet
+rapidfuzz==3.14.5               # Levenshtein in C, used by sphinx_corrector
+
+# PostgreSQL (Phase 6)
+sqlalchemy[asyncio]==2.0.45
+asyncpg==0.31.0
+# alembic~=1.13.0               # migrations — add when Phase 6 begins
+
+# Auth (Phase 6+)
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.5.0
+
+# GPT API (Phase 6+)
+openai==2.44.0
+httpx==0.27.0
+
+# Testing
+pytest==9.0.2
+pytest-asyncio==1.3.0
+pytest-cov==7.1.0
+respx==0.23.1                   # mock HTTP for GPT API tests
+
+# Static analysis
+mypy==1.19.0

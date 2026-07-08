@@ -23,7 +23,7 @@ export const Header = () => {
       <img
         src={horusEye}
         alt="Winged Horus eye"
-        className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-14 w-auto -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_3px_12px_rgba(180,120,30,0.5)] select-none md:h-16"
+        className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-16 w-auto -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_3px_12px_rgba(180,120,30,0.5)] select-none md:h-20"
         draggable={false}
       />
 

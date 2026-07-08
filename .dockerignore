@@ -1,0 +1,77 @@
+# .dockerignore — keep the build context small and the image clean
+
+#   Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+.eggs
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov
+
+#   Virtual environment
+.venv
+venv
+env
+ENV
+
+#   IDE  
+.vscode
+.idea
+*.swp
+*.swo
+
+#  Git  
+.git
+.gitignore
+.gitattributes
+
+#   Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Environment 
+.env
+.env.*
+!.env.example
+
+#    Documentation  
+README.md
+docs/
+*.md
+
+#   Notebooks and training artifacts 
+.ipynb_checkpoints
+notebooks/
+runs/
+wandb/
+mlflow/
+
+#  Artifacts mounted via volume,    
+artifacts/
+*.onnx
+*.pkl
+*.parquet
+confusion_matrix*.csv
+class_map*.json
+
+#   Tests
+tests/
+test_*.py
+*_test.py
+
+#   Data
+data/
+datasets/
+SphinxEyes_Final/
+SphinxEyes_v2_unified/
+
+#   OS  
+.DS_Store
+Thumbs.db
