@@ -20,6 +20,9 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import time
+from pathlib import Path
 
 from openai import OpenAI
 
@@ -31,6 +34,19 @@ from app.schemas.transliterations import (
 )
 
 logger = logging.getLogger('sphinxeyes.transliteration')
+
+# Debug: dump the EXACT messages sent to OpenAI (system + per-chunk user
+# prompts + raw LLM replies) to a JSON file under debug_prompts/ AND echo a
+# summary to the server console. Enable with SPHINX_DEBUG_PROMPTS=1 in .env
+# (read via settings, per-request — no restart-with-exported-var needed).
+# Payload only — never the API key.
+DEBUG_DIR = Path(__file__).resolve().parents[2] / 'debug_prompts'
+
+
+def _debug_enabled() -> bool:
+    # settings.debug_prompts loads SPHINX_DEBUG_PROMPTS from .env; the env
+    # var still wins if it's exported in the shell.
+    return settings.debug_prompts or os.getenv('SPHINX_DEBUG_PROMPTS') == '1'
 
 
 # Chunking (port of segement_into_chunck.segment_into_chunks)
@@ -183,6 +199,20 @@ class TransliterationService:
     def enabled(self) -> bool:
         return self._client is not None
 
+    @staticmethod
+    def _write_debug(dump: dict) -> None:
+        """Persist the exact LLM payload for inspection (overwrites the
+        'latest' file each request; keeps one timestamped copy too)."""
+        try:
+            DEBUG_DIR.mkdir(exist_ok=True)
+            latest = DEBUG_DIR / 'latest.json'
+            latest.write_text(json.dumps(dump, indent=2, ensure_ascii=False))
+            stamped = DEBUG_DIR / f"payload_{dump['timestamp'].replace(':', '-').replace(' ', '_')}.json"
+            stamped.write_text(json.dumps(dump, indent=2, ensure_ascii=False))
+            logger.info(f'LLM payload dumped to {latest}')
+        except Exception:
+            logger.exception('failed to write debug prompt dump')
+
     def transliterate(
         self,
         raw       : dict,          # SphinxPipeline.run() output
@@ -227,6 +257,42 @@ class TransliterationService:
             max_signs=settings.translit_max_signs,
         )
 
+        debug_dump: dict = {
+            'timestamp'       : time.strftime('%Y-%m-%d %H:%M:%S'),
+            'model'           : settings.openai_model,
+            'temperature'     : settings.translit_temperature,
+            'input'           : {
+                'codes'           : codes,
+                'confidences'     : [round(c, 4) for c in confidences],
+                'boundary_hints'  : boundary_hints,
+                'cartouche_names' : cartouche_names,
+                'direction'       : direction,
+                'layout'          : layout,
+                'context'         : ctx.model_dump(),
+            },
+            'system_prompt'   : SYSTEM_PROMPT,
+            'chunks'          : [],
+        } if _debug_enabled() else None
+
+        if debug_dump is not None:
+            # Echo the key facts to the server console so they're visible in
+            # the uvicorn CLI without opening the JSON dump. print(flush) —
+            # the app configures no logging handler, so sphinxeyes.* INFO
+            # logs would be swallowed by the root logger's WARNING default.
+            lines = [
+                '=' * 70,
+                'SPHINX_DEBUG_PROMPTS — LLM request',
+                f'  model={settings.openai_model} '
+                f'temp={settings.translit_temperature} chunks={len(chunks)}',
+                f'  codes ({len(codes)}): {" ".join(codes)}',
+                f'  cartouche_names -> LLM ({len(cartouche_names)}):',
+                *(f'    - {cn}' for cn in cartouche_names),
+            ]
+            if not cartouche_names:
+                lines.append('    (none — LLM will see no royal names!)')
+            lines.append('=' * 70)
+            print('\n'.join(lines), flush=True)
+
         results: list[ChunkTransliteration] = []
         for i, chunk in enumerate(chunks):
             c_codes = [c for c, _ in chunk]
@@ -240,6 +306,12 @@ class TransliterationService:
                 previous_context=previous,
                 chunk_info=f'Segment {i + 1} of {len(chunks)}',
             )
+            if debug_dump is not None:
+                debug_dump['chunks'].append({
+                    'chunk_index'  : i,
+                    'user_prompt'  : prompt,
+                    'llm_raw_reply': None,          # filled after the call
+                })
             try:
                 response = self._client.chat.completions.create(
                     model           = settings.openai_model,
@@ -250,7 +322,11 @@ class TransliterationService:
                     temperature     = settings.translit_temperature,
                     response_format = {'type': 'json_object'},
                 )
-                parsed = json.loads(response.choices[0].message.content)
+                raw_reply = response.choices[0].message.content
+                if debug_dump is not None:
+                    debug_dump['chunks'][-1]['llm_raw_reply'] = raw_reply
+                    self._write_debug(debug_dump)
+                parsed = json.loads(raw_reply)
             except Exception as e:
                 logger.exception(f'LLM transliteration failed on chunk {i}')
                 return TransliterationOut(

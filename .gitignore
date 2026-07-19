@@ -297,3 +297,7 @@ TrainingV3/
 # Ingore node_modules
 node_modules
 .env
+debug_prompts/
+
+agent_token.txt
+

@@ -12,11 +12,11 @@ class Settings(BaseSettings):
         
     # Pipeline artifacts (paths relative to repo root by default)
         
-    onnx_path        : Path = Path('artifacts/best_model_v4.onnx')
-    class_map        : Path = Path('artifacts/class_map50_v4.json')
+    onnx_path        : Path = Path('artifacts/best_model_v9.onnx')
+    class_map        : Path = Path('artifacts/class_map50_v9.json')
     trie_pkl         : Path = Path('artifacts/sphinx_trie_v4.pkl')
     bbaw_parquet     : Path = Path('artifacts/bbaw_clean.parquet')
-    confusion_csv    : Path = Path('artifacts/confusion_matrix_v4_normalized.csv')
+    confusion_csv    : Path = Path('artifacts/confusion_matrix_v9_normalized.csv')
  
     
     # YOLO / ONNX inference parameters
@@ -49,9 +49,14 @@ class Settings(BaseSettings):
     translit_max_signs  : int   = 20     # max Gardiner codes per LLM chunk
     translit_temperature: float = 0.1    # low — consistency over creativity
 
+    # Debug: dump the exact system + per-chunk user prompts + raw LLM
+    # replies to debug_prompts/ (SPHINX_DEBUG_PROMPTS=1 in .env). Payload
+    # only — never the API key. Read per-request, so no restart needed.
+    debug_prompts       : bool  = False
+
     # Metadata
 
-    pipeline_version : str   = 'v4'
+    pipeline_version : str   = 'v9'
  
     model_config = SettingsConfigDict(
         env_file        = '.env',

@@ -82,8 +82,6 @@ except ImportError:
     SourceRecord   = None       # type: ignore
     UNKNOWN_TOKEN  = 'Unknown'
 
-
-
 # Constants
 
 MAX_WORD_LEN    = 12    # max Gardiner codes in a single dictionary entry
@@ -690,73 +688,62 @@ def resolve_unknowns(
     current_slot = slot_offset
 
     for seg_codes, records, _ in path:
-        
+
         for idx, code in enumerate(seg_codes):
-            
-            if code == UNKNOWN_TOKEN and records:
-                
-                global_idx =  current_slot + idx
-                slot_candidates =  (  yolo_topk[global_idx] if global_idx < len( yolo_topk )  else [ ] ) 
-                
-                
-                yolo_alt_codes = {c for c, _ in slot_candidates if c != UNKNOWN_TOKEN }
-                
-                orig_counter: Counter = Counter()
-                
-                for rec in records : 
-                    
-                    if rec.gardiner_orig:
-                        
-                        orig_codes = rec.gardiner_orig.split()
-                        
-                        if idx < len( orig_codes ) :
-                            
-                            orig_counter[orig_codes[idx] ] +=  rec.freq
-                
-                if not orig_counter:
-                    continue
-                
-                
-                overlap =  [ c for c in orig_counter if c in yolo_alt_codes ]
-                
-                if overlap:
-                    
-                    best_code = max( overlap,  key = lambda c: orig_counter[c] ) 
-                    best_freq = orig_counter[best_code]
-                    
-                    reason =  ( 
-                           f"Courpus Proposal '{best_code}' confimed by YOLO , x3 candates this slot")
-                else:
-                    
-                    decent_yolo_alt = next(
-                        ( c for c , conf in slot_candidates 
-                         if  c !=  UNKNOWN_TOKEN and conf >= 0.2 ),
-                        None 
-                    )     
-                    
+
+            if code != UNKNOWN_TOKEN or not records:
+                continue
+
+            global_idx = current_slot + idx
+            slot_candidates = (yolo_topk[global_idx]
+                               if global_idx < len(yolo_topk) else [])
+            yolo_alt_codes = {c for c, _ in slot_candidates
+                              if c != UNKNOWN_TOKEN}
+
+            # Tally the ground-truth codes this Unknown stood in for.
+            orig_counter: Counter = Counter()
+            for rec in records:
+                if rec.gardiner_orig:
+                    orig_codes = rec.gardiner_orig.split()
+                    if idx < len(orig_codes):
+                        orig_counter[orig_codes[idx]] += rec.freq
+
+            if not orig_counter:
+                continue
+
+            overlap = [c for c in orig_counter if c in yolo_alt_codes]
+
+            if overlap:
+                # Best case: corpus proposal is also one of YOLO's top-3.
+                best_code = max(overlap, key=lambda c: orig_counter[c])
+                best_freq = orig_counter[best_code]
+                reason = (f"corpus proposal '{best_code}' confirmed by a "
+                          f"YOLO top-3 candidate at this slot")
+            else:
+                # No overlap: prefer a decent YOLO alternative, else corpus.
+                decent_yolo_alt = next(
+                    (c for c, conf in slot_candidates
+                     if c != UNKNOWN_TOKEN and conf >= 0.2),
+                    None,
+                )
                 if decent_yolo_alt is not None:
-                    
-                        best_code = decent_yolo_alt
-                        best_freq = 0
-                        reason = (
-                            f"no corpus/YOLO overlap; falling back to YOLO's "
-                            f"own alternative candidate '{decent_yolo_alt}' "
-                            f"instead of pure corpus frequency"
-                        )
+                    best_code = decent_yolo_alt
+                    best_freq = 0
+                    reason = (f"no corpus/YOLO overlap; falling back to "
+                              f"YOLO's own alternative '{decent_yolo_alt}'")
                 else:
                     best_code, best_freq = orig_counter.most_common(1)[0]
-                    reason = (
-                        f"no usable YOLO alternative; corpus frequency "
-                        f"proposal '{best_code}' (freq={best_freq})"
-                    )
+                    reason = (f"no usable YOLO alternative; corpus frequency "
+                              f"proposal '{best_code}' (freq={best_freq})")
 
             resolved.append(ResolvedUnknown(
                 slot=global_idx, proposed=best_code,
                 reason=reason, freq=best_freq,
             ))
-    current_slot += len(seg_codes)
 
-    return resolved           
+        current_slot += len(seg_codes)
+
+    return resolved
                 
 
 # 6. correct() — single entry point for FastAPI
@@ -824,7 +811,6 @@ def correct(
         candidates[0][1] if candidates else 0.5
         for candidates in yolo_topk
     ]
-    best_codes = beam_decode_topk(yolo_topk, log_prob, unigrams, beam_width=beam_width)
     print(f"[DEBUG] best_codes={best_codes}")
  
     #  Viterbi segmentation over best_codes
@@ -1208,9 +1194,7 @@ if __name__ == '__main__':
     import math as _math
     from collections import Counter as _Counter
 
-    # Synthetic bigram table: after 'X1', 'Unknown' is heavily favored,
-    # 'T22' and 'O29' are heavily disfavored. This isolates beam_decode_topk
-    # from whatever the real BBAW corpus happens to contain.
+    
     forced_log_prob = {
         'X1': {
             'Unknown': _math.log(0.90),
@@ -1221,19 +1205,19 @@ if __name__ == '__main__':
     forced_unigrams = _Counter({'X1': 1, 'Unknown': 1, 'T22': 1, 'O29': 1})
 
     slots_forced = [
-        [('X1', 0.99)],                                     # slot 0: forced anchor
-        [('T22', 0.55), ('Unknown', 0.30), ('O29', 0.15)],  # slot 1: contested
+        [('X1', 0.99)],
+        [('T22', 0.55), ('Unknown', 0.30), ('O29', 0.15)],
     ]
 
-    best_forced = beam_decode_topk(
+    # beam_decode_topk ahora retorna (codes, overridden) — desempaquetar ambos
+    best_codes_forced, overridden_forced = beam_decode_topk(
         slots_forced, forced_log_prob, forced_unigrams, beam_width=8
     )
     print(f"  yolo top-1 for slot 1 : T22 (conf=0.55)")
-    print(f"  beam search chose     : {best_forced[1]!r}")
+    print(f"  beam search chose     : {best_codes_forced[1]!r}")
+    print(f"  overridden flags      : {overridden_forced}")
 
-    if best_forced[1] == 'Unknown':
-        print("  CONFIRMED: bigram bias overrode YOLO's higher-confidence "
-            "top-1 pick, with zero gate protection at this stage.")
+    if best_codes_forced[1] == 'Unknown':
+        print("  CONFIRMED: bigram bias overrode YOLO's higher-confidence top-1.")
     else:
-        print("  NOT CONFIRMED: beam search kept YOLO's top-1 despite the "
-            "adversarial bigram. Hypothesis refuted for this mechanism.")
+        print("  NOT CONFIRMED: Fix 1's trust threshold reverted the bigram's choice.")

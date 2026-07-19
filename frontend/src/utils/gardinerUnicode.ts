@@ -37,7 +37,7 @@ export const GARDINER_TO_UNICODE: Record<string, string> = {
   d58: "𓃀",  // U+130C0
   d60: "𓃂",  // U+130C2
   e1: "𓃒",  // U+130D2
-  e10: "𓃝",  // U+130DD
+  m4: "𓆳",  // U+131B3 (v9: replaced e10)
   e16: "𓃣",  // U+130E3
   e23: "𓃭",  // U+130ED
   e34: "𓃹",  // U+130F9
@@ -68,7 +68,7 @@ export const GARDINER_TO_UNICODE: Record<string, string> = {
   i1: "𓆈",  // U+13188
   i10: "𓆓",  // U+13193
   i12: "𓆗",  // U+13197
-  i15: "𓆚",  // U+1319A
+  f34: "𓄣",  // U+13123 (v9: replaced i15)
   i9: "𓆑",  // U+13191
   l1: "𓆣",  // U+131A3
   l2: "𓆤",  // U+131A4
@@ -77,7 +77,7 @@ export const GARDINER_TO_UNICODE: Record<string, string> = {
   m17: "𓇋",  // U+131CB
   m18: "𓇍",  // U+131CD
   m2: "𓆰",  // U+131B0
-  m20: "𓇏",  // U+131CF
+  o29: "𓉻",  // U+1327B (v9: replaced m20)
   m22: "𓇑",  // U+131D1
   m23: "𓇓",  // U+131D3
   m24: "𓇔",  // U+131D4

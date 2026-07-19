@@ -85,10 +85,14 @@ def _draw_detections(bgr: np.ndarray, detections) -> np.ndarray:
         
         ty = y1 - 4 if y1 - th - base - 4 >= 0 else y2 + th + base + 4
         
-        cv2.rectangle(out, (x1, ty - th - base), (x1 + tw + 2, ty + base),
+        cv2.rectangle(out, (x1, ty - th - base), 
+                      (x1 + tw + 2, ty + base),
                       color, -1)
-        cv2.putText(out, label, (x1 + 1, ty), font, font_scale,
-                    (0, 0, 0), thick, cv2.LINE_AA)
+        cv2.putText(out, label, (x1 + 1, ty), 
+                    font, font_scale,
+                    (0, 0, 0), thick, 
+                    cv2.LINE_AA)
+        
     return out
 
 
@@ -102,9 +106,7 @@ def _filter_edge_cartouches(detections, img_w: int, img_h: int) -> list:
             
             x1, y1, x2, y2 = d.bbox
             
-            if (x1 <= ex or y1 <= ey
-                
-                    or x2 >= img_w - ex or y2 >= img_h - ey):
+            if (x1 <= ex or y1 <= ey or x2 >= img_w - ex or y2 >= img_h - ey):
                 continue
             
         kept.append(d)
@@ -117,11 +119,11 @@ class SphinxPipeline:
 
     def __init__(
         self,
-        onnx_path     : Path = ROOT / 'artifacts' / 'best_model_v4.onnx',
-        class_map     : Path = ROOT / 'artifacts' / 'class_map50_v4.json',
+        onnx_path     : Path = ROOT / 'artifacts' / 'best_model_v9.onnx',
+        class_map     : Path = ROOT / 'artifacts' / 'class_map50_v9.json',
         trie_pkl      : Path = ROOT / 'artifacts' / 'sphinx_trie_v4.pkl',
         bbaw_parquet  : Path = ROOT / 'artifacts' / 'bbaw_clean.parquet',
-        confusion_csv : Path = ROOT / 'artifacts' / 'confusion_matrix_v4_normalized.csv',
+        confusion_csv : Path = ROOT / 'artifacts' / 'confusion_matrix_v9_normalized.csv',
         imgsz         : int  = 1024,
         providers     : Optional[list] = None,
     ):
@@ -198,6 +200,13 @@ class SphinxPipeline:
         #     interior). Must run before layout vote so the cartouche-aspect
         #     signal isn't poisoned by tiny edge slivers.
         dets = _filter_edge_cartouches(dets, W, H)
+
+        # 1a') Collapse twin cartouche boxes over the same physical cartouche
+        #      (a low CARTOUCHE_CONF admits weak duplicates that the 0.50 NMS
+        #      leaves alone). Must run before tagging so interior signs bind
+        #      to the surviving box, and before the layout vote so duplicate
+        #      cartouches don't skew the cartouche-aspect signal.
+        dets = SL.merge_duplicate_cartouches(dets)
 
         # 1b) Layout should be supplied by the caller — the geometric
         #     auto-detector is UNRELIABLE on real walls (misvotes rows vs
