@@ -84,6 +84,66 @@ def test_build_prompt_includes_cartouche_anchor_and_context():
     assert 'previous line here' in prompt
 
 
+def test_build_prompt_renders_all_user_context_fields():
+    """Every form field (selects + free text incl. King's reign) must land
+    in the LLM prompt; blank strings render as 'unknown', never empty."""
+    ctx = TextContext(period='new_kingdom', text_type='temple_wall',
+                      support='granite', location_type='temple',
+                      site='Karnak', dynasty='XVIII',
+                      kings_reign='Thutmose III')
+    prompt = build_egyptologist_prompt(
+        ['G17'], [0.9], ctx, direction='rtl', layout='columns',
+        cartouche_names=[], previous_context=None, chunk_info='chunk 1/1',
+    )
+    for line in ("- Period: new kingdom", "- Dynasty: XVIII",
+                 "- King's reign: Thutmose III", "- Text type: temple wall",
+                 "- Physical support: granite", "- Location type: temple",
+                 "- Site: Karnak"):
+        assert line in prompt, line
+    # erased free-text field ('' from the client) -> 'unknown'
+    p2 = build_egyptologist_prompt(
+        ['G17'], [0.9],
+        TextContext(kings_reign='', site='  ', dynasty=''),
+        direction='rtl', layout='columns',
+        cartouche_names=[], previous_context=None, chunk_info='chunk 1/1',
+    )
+    assert "- King's reign: unknown" in p2
+    assert '- Site: unknown' in p2 and '- Dynasty: unknown' in p2
+
+
+def test_build_prompt_separates_unresolved_cartouches():
+    """UNRESOLVED entries must never appear under the 'authoritative' header."""
+    prompt = build_egyptologist_prompt(
+        ['G17'], [0.9], TextContext(),
+        direction='rtl', layout='columns',
+        cartouche_names=[
+            'mn-xpr-ra — Thutmose III',
+            '[UNRESOLVED cartouche — raw signs detected but no confident '
+            'royal-name match: N5 Y5 L1]',
+        ],
+        previous_context=None, chunk_info='chunk 1/1',
+    )
+    auth = prompt.index('treat as authoritative')
+    unres = prompt.index('NOT resolved to a known royal name')
+    assert prompt.index('mn-xpr-ra') > auth
+    assert auth < prompt.index('Thutmose III') < unres
+    assert prompt.index('N5 Y5 L1') > unres
+    # unresolved-only: no authoritative header at all
+    p2 = build_egyptologist_prompt(
+        ['G17'], [0.9], TextContext(), direction='rtl', layout='columns',
+        cartouche_names=['[UNRESOLVED cartouche — no signs detected]'],
+        previous_context=None, chunk_info='chunk 1/1',
+    )
+    assert 'treat as authoritative' not in p2
+    assert 'NOT resolved' in p2
+    # none at all
+    p3 = build_egyptologist_prompt(
+        ['G17'], [0.9], TextContext(), direction='rtl', layout='columns',
+        cartouche_names=[], previous_context=None, chunk_info='chunk 1/1',
+    )
+    assert 'Contains cartouche: no' in p3
+
+
 def test_clean_codes_drops_malformed():
     codes = ['G17', 'Aa15', 'NL3', 'D21a', 'not-a-code', 'g17 ', '', 123]
     out = _clean_codes(codes)

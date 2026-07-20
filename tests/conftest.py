@@ -87,6 +87,7 @@ def make_raw_result() -> dict:
         },
         'cartouches': [{
             'bbox': (10.0, 10.0, 100.0, 40.0), 'n_members': 4,
+            'slots': [[('N5', 0.8)], [('L1', 0.86)], [('N35', 0.83)]],
             'inferred': False, 'translit': 'wnjs', 'english': 'Unas',
             'spelling': ['E34', 'N35', 'M17', 'S29'], 'score': 3.2,
             'aligned_codes': ['E34', 'N35', 'M17', 'S29'], 'verified': True,

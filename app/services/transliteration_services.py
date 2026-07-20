@@ -138,14 +138,27 @@ def build_egyptologist_prompt(
     )
 
     def h(v: str) -> str:                     # human-readable context value
-        return v.replace('_', ' ')
+        # blank/whitespace (client sent '' after the user erased a field)
+        # must read as 'unknown', not an empty line the LLM could misread
+        return (v or '').strip().replace('_', ' ') or 'unknown'
 
-    cartouche_block = (
-        'Royal cartouches identified in this scene (lexicon-verified — '
-        'treat as authoritative, more reliable than raw sign codes):\n  '
-        + '\n  '.join(cartouche_names)
-        if cartouche_names else 'Contains cartouche: no'
-    )
+    # Matched names are authoritative; UNRESOLVED entries (match refused)
+    # carry raw interior signs only — never present those as verified.
+    matched    = [n for n in cartouche_names if not n.startswith('[UNRESOLVED')]
+    unresolved = [n for n in cartouche_names if n.startswith('[UNRESOLVED')]
+    parts = []
+    if matched:
+        parts.append(
+            'Royal cartouches identified in this scene (lexicon-verified — '
+            'treat as authoritative, more reliable than raw sign codes):\n  '
+            + '\n  '.join(matched))
+    if unresolved:
+        parts.append(
+            'Cartouches detected but NOT resolved to a known royal name — '
+            'read their raw interior signs yourself (a royal name or epithet '
+            'is likely; do not invent a specific king):\n  '
+            + '\n  '.join(unresolved))
+    cartouche_block = '\n- '.join(parts) if parts else 'Contains cartouche: no'
     previous_block = (
         f'\nPREVIOUS SEGMENTS of the same inscription (already transliterated '
         f'— keep names, epithets and topic consistent with them):\n'
@@ -157,12 +170,12 @@ def build_egyptologist_prompt(
 
 ARCHAEOLOGICAL CONTEXT (fields marked 'unknown' were not supplied by the user — do not invent them, but exploit every field that IS given):
 - Period: {h(ctx.period)}
-- Dynasty: {ctx.dynasty}
-- King's reign: {ctx.kings_reign}
+- Dynasty: {h(ctx.dynasty)}
+- King's reign: {h(ctx.kings_reign)}
 - Text type: {h(ctx.text_type)}
 - Physical support: {h(ctx.support)}
 - Location type: {h(ctx.location_type)}
-- Site: {ctx.site}
+- Site: {h(ctx.site)}
 - Reading direction: {direction}
 - Layout: {layout}
 - {cartouche_block}
