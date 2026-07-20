@@ -288,6 +288,7 @@ Glyphs/
 images/
 mosaic/
 notes/
+TrainingModels/
 SphinxEyes_Final/
 SphinxProjectV2/
 SphinxProjectV3/
@@ -296,3 +297,7 @@ TrainingV3/
 # Ingore node_modules
 node_modules
 .env
+debug_prompts/
+
+agent_token.txt
+

@@ -92,6 +92,9 @@ async def lifespan(app: FastAPI):
             f'SphinxPipeline failed to construct: {e}'
         ) from e
  
+    # /health reads this via getattr(pipeline, 'version', 'v4')
+    pipeline.version = settings.pipeline_version
+
     elapsed = time.perf_counter() - t0
     logger.info(f'Pipeline loaded in {elapsed:.2f}s')
  

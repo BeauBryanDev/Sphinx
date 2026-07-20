@@ -172,11 +172,25 @@ def match_cartouche(
         prior = 0.1 * math.log(meta.get('freq', 1) + 1)
         
         for spelling in meta.get('spellings', []):
-            
+
             if not spelling:
                 continue
-            
-            score, aligned = _align(slots, spelling, sub_cost)
+
+            # Cartouche interior reading order depends on which way the
+            # wall/figures face, which is independent of (and sometimes
+            # opposite to) the `direction` passed for the outer text —
+            # royal_names.json spellings are recorded in one canonical
+            # order, so a mirrored cartouche must not be penalized as a
+            # bad match. Try both orientations, keep the better one.
+            score_fwd, aligned_fwd = _align(slots, spelling, sub_cost)
+            score_rev, aligned_rev = _align(
+                list(reversed(slots)), spelling, sub_cost)
+
+            if score_rev > score_fwd:
+                score, aligned = score_rev, list(reversed(aligned_rev))
+            else:
+                score, aligned = score_fwd, aligned_fwd
+
             score += prior
             
             if best is None or score > best.score:

@@ -49,6 +49,11 @@ class Settings(BaseSettings):
     translit_max_signs  : int   = 20     # max Gardiner codes per LLM chunk
     translit_temperature: float = 0.1    # low — consistency over creativity
 
+    # Debug: dump the exact system + per-chunk user prompts + raw LLM
+    # replies to debug_prompts/ (SPHINX_DEBUG_PROMPTS=1 in .env). Payload
+    # only — never the API key. Read per-request, so no restart needed.
+    debug_prompts       : bool  = False
+
     # Metadata
 
     pipeline_version : str   = 'v9'

@@ -58,12 +58,21 @@ import numpy as np
 # Constants
 # ---------------------------------------------------------------------------
 CARTOUCHE_CLASS         = 'cartouche'
-CONF_THRESHOLD          = 0.25   # min max-class score to keep an anchor
+CONF_THRESHOLD          = 0.15   # min max-class score to keep an anchor
 NMS_IOU                 = 0.50   # class-agnostic NMS threshold
 TOP_K                   = 3      # alternatives kept per detection
-CARTOUCHE_CONF          = 0.25   # min score to treat a det as a cartouche
+CARTOUCHE_CONF          = 0.075  # min score to treat a det as a cartouche
+                                 # (lowered 0.25->0.05: the V9 detector under-
+                                 # scores cartouches even on trained images;
+                                 # missing the cartouche loses the royal name)
                                  # (was 0.50; real cartouches on weathered
                                  # stone surface at ~0.28 — sandstone_wall)
+CARTOUCHE_MERGE_IOU     = 0.30   # two 'cartouche' boxes overlapping above
+                                 # this collapse to the higher-scoring one.
+                                 # Lower than the 0.50 global NMS on purpose:
+                                 # lowering CARTOUCHE_CONF admits weak twin
+                                 # boxes over ONE real cartouche (IoU ~0.3-0.5)
+                                 # that NMS leaves alone. Cartouche-only.
 CARTOUCHE_EXPAND_FRAC   = 0.10   # expand cartouche bbox before containment
 MEMBER_MIN_OVERLAP      = 0.20   # min fraction of a sign's area overlapping
                                  # the RAW cartouche bbox to count as member
@@ -258,6 +267,19 @@ def postprocess_onnx(
 
     max_scores = scores.max(axis=0)  # [N]
     mask = max_scores >= conf_thresh
+
+    # Cartouche bypass: the V9 detector chronically UNDER-scores cartouches
+    # (OOD scale/context — see degubbing_cartouches.md), and dropping the
+    # cartouche box loses the royal name entirely. So keep any anchor whose
+    # TOP class is 'cartouche' down to CARTOUCHE_CONF, even when that is
+    # below the global conf gate. Only the cartouche class gets this relief.
+    try:
+        cart_row = class_names.index(CARTOUCHE_CLASS)
+        cart_argmax = scores.argmax(axis=0) == cart_row
+        mask = mask | (cart_argmax & (scores[cart_row] >= CARTOUCHE_CONF))
+    except ValueError:
+        pass  # no cartouche class in this model — nothing to relax
+
     if not mask.any():
         return []
 
@@ -538,6 +560,43 @@ def merge_duplicate_boxes(
         if d.cartouche_id is not None:
             d.cartouche_id = new_idx[id(detections[d.cartouche_id])]
     return merged
+
+
+def merge_duplicate_cartouches(
+    detections : list[Detection],
+    iou_thresh : float = CARTOUCHE_MERGE_IOU,
+) -> list[Detection]:
+    """
+    Collapse twin cartouche boxes over the SAME physical cartouche.
+
+    `merge_duplicate_boxes` deliberately never merges cartouches, and the
+    global class-agnostic NMS only fires above IoU 0.50 — so when a lowered
+    CARTOUCHE_CONF admits a second, weaker box over one real cartouche at
+    IoU ~0.3-0.5, both survive and the panel reads two cartouches where
+    there is one. This pass dedups cartouche-vs-cartouche only, at a lower
+    IoU, keeping the higher-scoring box. Non-cartouche detections pass
+    through untouched and in place.
+    """
+    carts = [(i, d) for i, d in enumerate(detections) if d.is_cartouche()]
+    if len(carts) < 2:
+        return detections
+
+    # Greedy: score-descending, suppress lower-scoring cartouches that
+    # overlap a kept one above the threshold.
+    carts.sort(key=lambda t: t[1].max_score, reverse=True)
+    drop: set[int] = set()
+    for a in range(len(carts)):
+        ia, da = carts[a]
+        if ia in drop:
+            continue
+        for b in range(a + 1, len(carts)):
+            ib, db = carts[b]
+            if ib in drop:
+                continue
+            if iou(da.bbox, db.bbox) > iou_thresh:
+                drop.add(ib)
+
+    return [d for i, d in enumerate(detections) if i not in drop]
 
 
 @dataclass
