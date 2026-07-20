@@ -90,6 +90,9 @@ export interface CartoucheOut {
   spelling: string[] | null;
   score: number | null;
   verified: boolean | null;
+  /** Raw interior top-1 Gardiner codes — present even when the royal-name
+   *  match REFUSED (translit null), so the LLM stage still sees the signs. */
+  interior_codes?: string[] | null;
 }
 
 export interface PredictResponse {

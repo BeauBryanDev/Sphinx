@@ -162,12 +162,18 @@ export const transliterateGlyphs = async (
     codes: correction.flat_corrected_seq,
     confidences: detection.outer.slots.map((slot) => slot[0]?.[1] ?? 0),
     boundary_hints: detection.outer.boundary_hints,
-    cartouche_names: detection.cartouches
-      .filter((c) => c.translit)
-      .map(
-        (c) =>
-          `${c.translit} — ${c.english ?? ""} (interior: ${(c.spelling ?? []).join(" ")})`,
-      ),
+    // Mirrors the backend one-shot path (transliteration_services.py):
+    // matched cartouches are authoritative; REFUSED ones still forward
+    // their raw interior signs instead of vanishing from the LLM input.
+    cartouche_names: detection.cartouches.map((c) => {
+      if (c.translit) {
+        return `${c.translit} — ${c.english ?? ""} (interior: ${(c.spelling ?? []).join(" ")})`;
+      }
+      const rawCodes = (c.interior_codes ?? []).join(" ");
+      return rawCodes
+        ? `[UNRESOLVED cartouche — raw signs detected but no confident royal-name match: ${rawCodes}]`
+        : "[UNRESOLVED cartouche — no signs detected]";
+    }),
     direction: detection.direction,
     layout: detection.layout,
     context,
