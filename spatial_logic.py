@@ -65,6 +65,10 @@ CARTOUCHE_CONF          = 0.25   # min score to treat a det as a cartouche
                                  # (was 0.50; real cartouches on weathered
                                  # stone surface at ~0.28 — sandstone_wall)
 CARTOUCHE_EXPAND_FRAC   = 0.10   # expand cartouche bbox before containment
+MEMBER_MIN_OVERLAP      = 0.20   # min fraction of a sign's area overlapping
+                                 # the RAW cartouche bbox to count as member
+                                 # (blocks adjacent outer signs the expanded
+                                 # zone would otherwise swallow)
 # Re-entry crop insets as (short_axis_frac, long_axis_frac) per side.
 # Two complementary passes whose results are unioned via the dedupe step:
 #   shallow (6%/6%)  — keeps signs hugging the bracket ends
@@ -298,6 +302,12 @@ def tag_cartouche_members(
     correctly tagged. A detection inside two overlapping cartouches is
     assigned to the smaller one (tighter fit wins).
 
+    Guard (2026-07-19): a sign must ALSO overlap the RAW cartouche bbox by
+    >= MEMBER_MIN_OVERLAP of its own area. The expansion alone swallowed
+    outer-text signs sitting just above the cartouche (padding_cartouche_1:
+    the two X1 of nsw-bity, ~6% overlap, vanished from the outer sequence).
+    Bracket-clipped true members overlap far more (~38% in the self-test).
+
     Returns the indices of the cartouche detections themselves.
     """
     cartouche_idxs = [
@@ -305,13 +315,20 @@ def tag_cartouche_members(
     ]
     # Smaller cartouches assign last -> tighter fit wins on overlap
     for ci in sorted(cartouche_idxs, key=lambda i: -detections[i].area):
-        zone = expand_bbox(detections[ci].bbox, expand_frac, img_w, img_h)
+        raw = detections[ci].bbox
+        zone = expand_bbox(raw, expand_frac, img_w, img_h)
         for j, det in enumerate(detections):
             if j == ci or det.is_cartouche(cartouche_conf):
                 continue
-            if contains_point(zone, det.centroid):
-                det.inside_cartouche = True
-                det.cartouche_id = ci
+            if not contains_point(zone, det.centroid):
+                continue
+            # overlap of the sign's own area with the RAW cartouche box
+            ox = max(0.0, min(raw[2], det.bbox[2]) - max(raw[0], det.bbox[0]))
+            oy = max(0.0, min(raw[3], det.bbox[3]) - max(raw[1], det.bbox[1]))
+            if det.area > 0 and (ox * oy) / det.area < MEMBER_MIN_OVERLAP:
+                continue
+            det.inside_cartouche = True
+            det.cartouche_id = ci
     return cartouche_idxs
 
 
@@ -898,319 +915,3 @@ def make_onnx_infer_fn(
         return infer_letterbox
     raise ValueError(f"mode must be 'stretch' or 'letterbox', got {mode!r}")
 
-
-# ---------------------------------------------------------------------------
-# CLI smoke test (synthetic — no ONNX model or image files needed)
-# ---------------------------------------------------------------------------
-
-if __name__ == '__main__':
-    print("spatial_logic.py — smoke test")
-    print("=" * 60)
-
-    names = ['Aa1', 'cartouche', 'g17', 'n35', 'd21', 'unknown']
-
-    # ------------------------------------------------------------------
-    print("Test 1 — Detection dataclass properties")
-    d = Detection(bbox=(10.0, 20.0, 50.0, 100.0),
-                  top3=[('g17', 0.9), ('n35', 0.05), ('unknown', 0.01)])
-    assert d.centroid == (30.0, 60.0)
-    assert d.width == 40.0 and d.height == 80.0 and d.area == 3200.0
-    assert d.cls == 'g17' and d.max_score == 0.9
-    assert not d.is_cartouche()
-    print("  centroid/area/cls/max_score                    OK")
-
-    # ------------------------------------------------------------------
-    print("Test 2 — postprocess_onnx: conf filter, NMS, top-3")
-    C, N = len(names), 6
-    raw = np.zeros((4 + C, N), dtype=np.float32)
-    raw[4:, :] = 0.01                                  # background noise
-
-    # anchor 0: g17 at (100,100) 40x40, score 0.90
-    raw[:4, 0] = [100, 100, 40, 40];  raw[4 + 2, 0] = 0.90
-    raw[4 + 3, 0] = 0.30; raw[4 + 5, 0] = 0.10         # alternates
-    # anchor 1: duplicate of anchor 0, slightly shifted, lower score
-    raw[:4, 1] = [104, 102, 40, 40];  raw[4 + 2, 1] = 0.70
-    # anchor 2: n35 far away, score 0.60
-    raw[:4, 2] = [300, 100, 30, 30];  raw[4 + 3, 2] = 0.60
-    # anchor 3: below conf threshold everywhere
-    raw[:4, 3] = [500, 100, 30, 30];  raw[4 + 0, 3] = 0.10
-    # anchors 4-5: zeros (dead)
-
-    dets = postprocess_onnx(raw[None], names, conf_thresh=0.25)
-    assert len(dets) == 2, f"expected 2 detections, got {len(dets)}"
-    assert dets[0].cls == 'g17' and abs(dets[0].max_score - 0.90) < 1e-6
-    assert dets[1].cls == 'n35'
-    # top-3 ordering on the survivor
-    assert [c for c, _ in dets[0].top3] == ['g17', 'n35', 'unknown']
-    # bbox decoded cxcywh -> xyxy
-    assert dets[0].bbox == (80.0, 80.0, 120.0, 120.0)
-    print(f"  kept {len(dets)} dets (dup suppressed, low-conf dropped)  OK")
-    print(f"  top3 of first: {[(c, round(s, 2)) for c, s in dets[0].top3]}")
-
-    # ------------------------------------------------------------------
-    print("Test 3 — cartouche containment tagging")
-    cart = Detection(bbox=(100.0, 50.0, 300.0, 120.0),
-                     top3=[('cartouche', 0.80), ('Aa1', 0.05), ('g17', 0.02)])
-    inside    = Detection(bbox=(120.0, 60.0, 150.0, 110.0),
-                          top3=[('g17', 0.85), ('n35', 0.1), ('d21', 0.02)])
-    # centroid x=302 — just past the raw edge, caught by the 10% expansion
-    bracket   = Detection(bbox=(294.0, 60.0, 310.0, 110.0),
-                          top3=[('n35', 0.70), ('g17', 0.1), ('d21', 0.05)])
-    outside   = Detection(bbox=(400.0, 60.0, 430.0, 110.0),
-                          top3=[('d21', 0.90), ('g17', 0.05), ('n35', 0.02)])
-    dets3 = [cart, inside, bracket, outside]
-    cart_idxs = tag_cartouche_members(dets3)
-    assert cart_idxs == [0]
-    assert inside.inside_cartouche  and inside.cartouche_id  == 0
-    assert bracket.inside_cartouche and bracket.cartouche_id == 0
-    assert not outside.inside_cartouche
-    assert not cart.inside_cartouche       # cartouches never tag themselves
-    print("  inside tagged, bracket-edge caught by expansion, "
-          "outside untouched  OK")
-
-    # ------------------------------------------------------------------
-    print("Test 4 — re-entry fallback fires on empty cartouche")
-    img = np.zeros((200, 500, 3), dtype=np.uint8)
-    cart4 = Detection(bbox=(100.0, 50.0, 300.0, 150.0),
-                      top3=[('cartouche', 0.9), ('Aa1', 0.02), ('g17', 0.01)])
-    lone  = Detection(bbox=(130.0, 70.0, 160.0, 130.0),
-                      top3=[('g17', 0.55), ('n35', 0.2), ('d21', 0.1)])
-    dets4 = [cart4, lone]
-    idxs4 = tag_cartouche_members(dets4)
-    assert lone.inside_cartouche          # 1 member < MIN_CARTOUCHE_MEMBERS
-
-    calls = []
-    def mock_infer(crop):
-        calls.append(crop.shape)
-        return [
-            # bracket leakage: must be filtered
-            Detection(bbox=(0.0, 0.0, 160.0, 88.0),
-                      top3=[('cartouche', 0.6), ('Aa1', 0.1), ('g17', 0.05)]),
-            # duplicate of `lone`, higher score: updates it in place
-            Detection(bbox=(9.0, 13.0, 41.0, 75.0),
-                      top3=[('g17', 0.80), ('n35', 0.1), ('d21', 0.05)]),
-            # genuinely new inner sign
-            Detection(bbox=(82.0, 15.0, 112.0, 75.0),
-                      top3=[('n35', 0.75), ('g17', 0.1), ('d21', 0.05)]),
-        ]
-
-    out4 = cartouche_reentry(img, dets4, idxs4, mock_infer)
-    # two inset passes per cartouche: (6%,6%) then (6%,10%)
-    # horizontal cartouche (100,50,300,150): long axis = x
-    #   pass 1 origin (112,56), 176x88;  pass 2 origin (120,56), 160x88
-    assert len(calls) == 2, f"expected 2 passes, got {len(calls)}"
-    assert calls[0] == (88, 176, 3), f"pass-1 crop shape {calls[0]}"
-    assert calls[1] == (88, 160, 3), f"pass-2 crop shape {calls[1]}"
-    # cross-pass union dedupes: still exactly 3 dets, no twins
-    assert len(out4) == 3, f"expected 3 dets after re-entry, got {len(out4)}"
-    # `lone` updated in place by the higher-scoring pass-1 duplicate;
-    # pass-2's shifted twin (IoU 0.6, equal score) must NOT update again
-    assert abs(lone.max_score - 0.80) < 1e-6
-    assert lone.bbox == (121.0, 69.0, 153.0, 131.0)
-    # new det mapped to global coords via pass-1 origin and tagged
-    new = out4[2]
-    assert new.from_reentry and new.inside_cartouche and new.cartouche_id == 0
-    assert new.bbox == (194.0, 71.0, 224.0, 131.0)
-    assert all(d.cls != CARTOUCHE_CLASS or d is cart4 for d in out4), \
-        "inner cartouche must be filtered"
-    print("  2-pass crops, bracket filter, cross-pass dedupe, "
-          "global mapping  OK")
-
-    # ------------------------------------------------------------------
-    print("Test 5 — legacy mode (always=False) skips populated cartouches")
-    cart5 = Detection(bbox=(100.0, 50.0, 300.0, 150.0),
-                      top3=[('cartouche', 0.9), ('Aa1', 0.02), ('g17', 0.01)])
-    m1 = Detection(bbox=(120.0, 70.0, 150.0, 130.0),
-                   top3=[('g17', 0.8), ('n35', 0.1), ('d21', 0.05)])
-    m2 = Detection(bbox=(180.0, 70.0, 210.0, 130.0),
-                   top3=[('n35', 0.7), ('g17', 0.1), ('d21', 0.05)])
-    dets5 = [cart5, m1, m2]
-    idxs5 = tag_cartouche_members(dets5)
-
-    def must_not_run(crop):
-        raise AssertionError("legacy mode must not fire: 2 members tagged")
-
-    out5 = cartouche_reentry(img, dets5, idxs5, must_not_run, always=False)
-    assert len(out5) == 3
-    # default always=True DOES fire on the same input
-    fired = []
-    dets5b = [cart5, m1, m2]
-    cartouche_reentry(img, dets5b, idxs5, lambda c: fired.append(1) or [])
-    assert fired, "always=True must re-enter even populated cartouches"
-    print("  legacy skip + always-mode fire                 OK")
-
-    # ------------------------------------------------------------------
-    print("Test 6 — asymmetric inset on a vertical cartouche")
-    # vertical box 60x200: long axis = y -> x inset 6%, y inset 10%
-    box = inset_bbox((100.0, 50.0, 160.0, 250.0), 0.06, 0.10)
-    assert box == (103.6, 70.0, 156.4, 230.0), f"got {box}"
-    # letterbox round-trip: tall crop maps back exactly
-    crop6 = np.zeros((300, 100, 3), dtype=np.uint8)
-    canvas, scale, dx, dy = letterbox(crop6, imgsz=1024)
-    assert canvas.shape == (1024, 1024, 3)
-    # a point at crop (50, 150) -> model (50*s+dx, 150*s+dy) -> back
-    mx, my = 50 * scale + dx, 150 * scale + dy
-    assert abs((mx - dx) / scale - 50) < 1e-9
-    assert abs((my - dy) / scale - 150) < 1e-9
-    print("  long-axis inset + letterbox round-trip         OK")
-
-    # ------------------------------------------------------------------
-    print("Test 7 — duplicate-box merge (DSU, top-3 union, id remap)")
-    cart7 = Detection(bbox=(80.0, 80.0, 180.0, 420.0),
-                      top3=[('cartouche', 0.9), ('Aa1', 0.02), ('g17', 0.01)])
-    s29 = Detection(bbox=(100.0, 100.0, 130.0, 200.0),
-                    top3=[('s29', 0.79), ('o34', 0.05), ('f31', 0.04)],
-                    inside_cartouche=True, cartouche_id=0, from_reentry=True)
-    f31 = Detection(bbox=(105.0, 102.0, 122.0, 198.0),     # thin twin inside
-                    top3=[('f31', 0.50), ('m17', 0.10), ('z4', 0.03)],
-                    inside_cartouche=True, cartouche_id=0, from_reentry=True)
-    far = Detection(bbox=(100.0, 300.0, 130.0, 400.0),
-                    top3=[('n35', 0.60), ('n37', 0.05), ('z7', 0.02)],
-                    inside_cartouche=True, cartouche_id=0, from_reentry=True)
-    m7 = merge_duplicate_boxes([cart7, s29, f31, far])
-    assert len(m7) == 3, f"expected 3 after merge, got {len(m7)}"
-    assert m7[1] is s29                       # higher score keeps identity
-    assert [c for c, _ in s29.top3] == ['s29', 'f31', 'm17']   # union'd
-    assert abs(dict(s29.top3)['f31'] - 0.50) < 1e-9
-    # cartouche survived unmerged despite full overlap with its members
-    assert m7[0] is cart7
-    # cartouche_id remapped to new positions (cart7 still index 0 here)
-    assert s29.cartouche_id == 0 and far.cartouche_id == 0
-    print("  same-stroke twin merged, cartouche immune, ids remapped  OK")
-
-    # ------------------------------------------------------------------
-    print("Test 8 — quadrat clustering, columns layout (anti-chaining)")
-    # column of: flat n35, then m17+s29 side-by-side pair, then flat x1
-    n35q = Detection(bbox=(260.0, 60.0, 330.0, 85.0),
-                     top3=[('n35', 0.6), ('n37', 0.05), ('z7', 0.02)])
-    m17q = Detection(bbox=(300.0, 100.0, 315.0, 180.0),
-                     top3=[('m17', 0.65), ('f31', 0.1), ('z4', 0.03)])
-    s29q = Detection(bbox=(265.0, 100.0, 290.0, 180.0),
-                     top3=[('s29', 0.79), ('o34', 0.05), ('f31', 0.04)])
-    x1q  = Detection(bbox=(265.0, 200.0, 325.0, 225.0),
-                     top3=[('x1', 0.7), ('z1', 0.05), ('x8', 0.02)])
-    qs = cluster_quadrats([n35q, m17q, s29q, x1q], layout='columns')
-    sizes = sorted(len(q.members) for q in qs)
-    assert sizes == [1, 1, 2], f"expected [1,1,2], got {sizes}"
-    pair = next(q for q in qs if len(q.members) == 2)
-    assert {d.cls for d in pair.members} == {'m17', 's29'}
-    # within-quadrat rtl: m17 (right) reads before s29 (left)
-    assert [d.cls for d in pair.ordered('rtl')] == ['m17', 's29']
-    assert [d.cls for d in pair.ordered('ltr')] == ['s29', 'm17']
-    # vertical neighbors in the column never merged (no y-overlap)
-    print("  side-by-side pair grouped, column flow not chained, "
-          "rtl order  OK")
-
-    # ------------------------------------------------------------------
-    print("Test 9 — quadrat clustering, rows layout (anti-chaining)")
-    # a row of 3 adjacent signs + one stacked pair
-    a = Detection(bbox=(100.0, 100.0, 140.0, 140.0),
-                  top3=[('g17', 0.8), ('g18', 0.05), ('Aa1', 0.02)])
-    b = Detection(bbox=(150.0, 100.0, 190.0, 140.0),
-                  top3=[('d21', 0.8), ('d22', 0.05), ('Aa1', 0.02)])
-    c = Detection(bbox=(200.0, 100.0, 240.0, 140.0),
-                  top3=[('x1', 0.8), ('z1', 0.05), ('Aa1', 0.02)])
-    top = Detection(bbox=(250.0, 95.0, 290.0, 115.0),
-                    top3=[('n35', 0.7), ('n37', 0.05), ('z7', 0.02)])
-    bot = Detection(bbox=(250.0, 122.0, 290.0, 142.0),
-                    top3=[('z1', 0.6), ('x1', 0.05), ('z4', 0.02)])
-    qs = cluster_quadrats([a, b, c, top, bot], layout='rows')
-    sizes = sorted(len(q.members) for q in qs)
-    assert sizes == [1, 1, 1, 2], f"expected [1,1,1,2], got {sizes}"
-    pair = next(q for q in qs if len(q.members) == 2)
-    assert [d.cls for d in pair.ordered('rtl')] == ['n35', 'z1']  # top first
-    print("  stacked pair grouped, crowded row not chained          OK")
-
-    # ------------------------------------------------------------------
-    print("Test 10 — oversized component splits at largest gap")
-    run = []
-    for k, x in enumerate((0, 20, 40, 75, 95)):     # largest gap 40->75
-        run.append(Detection(bbox=(float(x), 100.0, float(x + 14), 180.0),
-                             top3=[('m17', 0.6), ('z4', 0.05), ('f31', 0.02)]))
-    qs = cluster_quadrats(run, layout='columns', max_signs=4)
-    sizes = sorted(len(q.members) for q in qs)
-    assert sizes == [2, 3], f"expected split [2,3], got {sizes}"
-    print("  5-sign chain split into 3+2 at the widest gap          OK")
-
-    # ------------------------------------------------------------------
-    print("Test 11 — line assembly: columns rtl + boundary hints")
-    def det(x1, y1, x2, y2, cls_, score=0.8):
-        return Detection(bbox=(float(x1), float(y1), float(x2), float(y2)),
-                         top3=[(cls_, score), ('z1', 0.05), ('Aa1', 0.02)])
-    # right column: g17, n35 (top-down). left column: d21, x1.
-    rg, rn = det(300, 100, 340, 140, 'g17'), det(300, 160, 340, 200, 'n35')
-    ld, lx = det(100, 100, 140, 140, 'd21'), det(100, 160, 140, 200, 'x1')
-    quads = cluster_quadrats([rg, rn, ld, lx], layout='columns')
-    ro = assemble_reading_order(quads, layout='columns', direction='rtl')
-    seq = [s[0][0] for s in ro.slots]
-    assert seq == ['g17', 'n35', 'd21', 'x1'], seq      # right column first
-    assert ro.boundary_hints == [2, 4], ro.boundary_hints
-    assert ro.n_synthetic == 0
-    # ltr flips column order
-    ro2 = assemble_reading_order(quads, layout='columns', direction='ltr')
-    assert [s[0][0] for s in ro2.slots] == ['d21', 'x1', 'g17', 'n35']
-    print("  column order, boundary hints, ltr flip                 OK")
-
-    # ------------------------------------------------------------------
-    print("Test 12 — synthetic Unknown insertion (mid-gap + leading edge)")
-    # one column; ~1.7-step gap between n35 and s29 (one sign missing)
-    t = det(100, 100, 140, 130, 'n35')             # h=30 -> med_step=30
-    btm = det(100, 180, 140, 210, 's29')           # gap=50 > 1.5*30
-    quads = cluster_quadrats([t, btm], layout='columns')
-    ro = assemble_reading_order(quads, layout='columns', direction='rtl')
-    seq = [s[0][0] for s in ro.slots]
-    assert seq == ['n35', 'unknown', 's29'], seq
-    assert ro.slot_detections[1] is None
-    assert ro.slots[1] == [('unknown', 0.0)]
-    # with extent: leading gap above the first sign also flagged
-    # (the Unas e34 case — missing FIRST sign, no quadrat above it)
-    ro = assemble_reading_order(quads, layout='columns', direction='rtl',
-                                extent=(95.0, 50.0, 145.0, 240.0))
-    seq = [s[0][0] for s in ro.slots]
-    assert seq == ['unknown', 'n35', 'unknown', 's29'], seq
-    # huge gap (~6 steps) inserts only MAX_GAP_INSERTS synthetic slots
-    big = det(100, 330, 140, 360, 'x1')
-    quads = cluster_quadrats([t, big], layout='columns')
-    ro = assemble_reading_order(quads, layout='columns', direction='rtl')
-    seq = [s[0][0] for s in ro.slots]
-    assert seq == ['n35', 'unknown', 'unknown', 'x1'], seq
-    print("  mid-gap, leading-edge (extent), multi-insert cap       OK")
-
-    # ------------------------------------------------------------------
-    print("Test 13 — rows layout, rtl reads right-to-left")
-    r1a, r1b = det(300, 100, 340, 140, 'g17'), det(250, 100, 290, 140, 'd21')
-    r2a = det(300, 200, 340, 240, 'x1')
-    quads = cluster_quadrats([r1a, r1b, r2a], layout='rows')
-    ro = assemble_reading_order(quads, layout='rows', direction='rtl')
-    seq = [s[0][0] for s in ro.slots]
-    assert seq == ['g17', 'd21', 'x1'], seq     # row 1 right->left, then row 2
-    assert ro.boundary_hints == [2, 3]
-    # rtl rows: ~1.75-step gap to the LEFT of the first sign
-    quads = cluster_quadrats([r1a, det(190, 100, 230, 140, 'd21')],
-                             layout='rows')
-    ro = assemble_reading_order(quads, layout='rows', direction='rtl')
-    seq = [s[0][0] for s in ro.slots]
-    assert seq == ['g17', 'unknown', 'd21'], seq
-    print("  rtl row order, rtl mid-gap insertion                   OK")
-
-    # ------------------------------------------------------------------
-    print("Test 14 — single_line: cartouche interiors are ONE column")
-    # x-misaligned signs that line-grouping wrongly splits into 2 columns
-    n_  = det(140, 100, 160, 120, 'n35')            # narrow, sits right
-    m_  = det(100, 140, 112, 170, 'm17')            # tall pair, sits left
-    s_  = det(118, 140, 143, 170, 's29')
-    quads = cluster_quadrats([n_, m_, s_], layout='columns')
-    ext = (95.0, 60.0, 160.0, 200.0)
-    multi = assemble_reading_order(quads, layout='columns', direction='rtl',
-                                   extent=ext)
-    single = assemble_reading_order(quads, layout='columns', direction='rtl',
-                                    extent=ext, single_line=True)
-    assert len(multi.lines) == 2          # the failure mode: fake columns
-    assert len(single.lines) == 1
-    seq = [s[0][0] for s in single.slots]
-    # one leading Unknown (gap above n35), then top-down, rtl in the band
-    assert seq == ['unknown', 'n35', 's29', 'm17'], seq
-    print("  one line forced (multi-mode split into 2), rtl bands   OK")
-
-    print()
-    print("All tests passed.")

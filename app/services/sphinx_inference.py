@@ -90,6 +90,8 @@ class InferenceService:
             score         = c.get('score'),
             aligned_codes = c.get('aligned_codes'),
             verified      = c.get('verified'),
+            interior_codes = [slot[0][0] for slot in c.get('slots', [])
+                              if slot] or None,
         )
 
     def _map(self, raw: dict) -> PredictResponse:

@@ -117,11 +117,11 @@ class SphinxPipeline:
 
     def __init__(
         self,
-        onnx_path     : Path = ROOT / 'artifacts' / 'best_model_v4.onnx',
-        class_map     : Path = ROOT / 'artifacts' / 'class_map50_v4.json',
+        onnx_path     : Path = ROOT / 'artifacts' / 'best_model_v9.onnx',
+        class_map     : Path = ROOT / 'artifacts' / 'class_map50_v9.json',
         trie_pkl      : Path = ROOT / 'artifacts' / 'sphinx_trie_v4.pkl',
         bbaw_parquet  : Path = ROOT / 'artifacts' / 'bbaw_clean.parquet',
-        confusion_csv : Path = ROOT / 'artifacts' / 'confusion_matrix_v4_normalized.csv',
+        confusion_csv : Path = ROOT / 'artifacts' / 'confusion_matrix_v9_normalized.csv',
         imgsz         : int  = 1024,
         providers     : Optional[list] = None,
     ):

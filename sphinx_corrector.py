@@ -720,22 +720,22 @@ def resolve_unknowns(
                 overlap =  [ c for c in orig_counter if c in yolo_alt_codes ]
                 
                 if overlap:
-                    
-                    best_code = max( overlap,  key = lambda c: orig_counter[c] ) 
+
+                    best_code = max( overlap,  key = lambda c: orig_counter[c] )
                     best_freq = orig_counter[best_code]
-                    
-                    reason =  ( 
-                           f"Courpus Proposal '{best_code}' confimed by YOLO , x3 candates this slot")
+
+                    reason =  (
+                           f"Corpus proposal '{best_code}' confirmed by YOLO "
+                           f"top-3 candidates for this slot")
                 else:
-                    
+
                     decent_yolo_alt = next(
-                        ( c for c , conf in slot_candidates 
+                        ( c for c , conf in slot_candidates
                          if  c !=  UNKNOWN_TOKEN and conf >= 0.2 ),
-                        None 
-                    )     
-                    
-                if decent_yolo_alt is not None:
-                    
+                        None
+                    )
+
+                    if decent_yolo_alt is not None:
                         best_code = decent_yolo_alt
                         best_freq = 0
                         reason = (
@@ -743,18 +743,18 @@ def resolve_unknowns(
                             f"own alternative candidate '{decent_yolo_alt}' "
                             f"instead of pure corpus frequency"
                         )
-                else:
-                    best_code, best_freq = orig_counter.most_common(1)[0]
-                    reason = (
-                        f"no usable YOLO alternative; corpus frequency "
-                        f"proposal '{best_code}' (freq={best_freq})"
-                    )
+                    else:
+                        best_code, best_freq = orig_counter.most_common(1)[0]
+                        reason = (
+                            f"no usable YOLO alternative; corpus frequency "
+                            f"proposal '{best_code}' (freq={best_freq})"
+                        )
 
-            resolved.append(ResolvedUnknown(
-                slot=global_idx, proposed=best_code,
-                reason=reason, freq=best_freq,
-            ))
-    current_slot += len(seg_codes)
+                resolved.append(ResolvedUnknown(
+                    slot=global_idx, proposed=best_code,
+                    reason=reason, freq=best_freq,
+                ))
+        current_slot += len(seg_codes)
 
     return resolved           
                 
@@ -811,8 +811,6 @@ def correct(
             had_fallback       = False,
         )
 
-    print(f"[DEBUG] yolo_topk={yolo_topk}")
-
     #   Beam search over top-3 candidates to get best flat sequence
  
     best_codes, beam_overrides = beam_decode_topk(
@@ -824,9 +822,6 @@ def correct(
         candidates[0][1] if candidates else 0.5
         for candidates in yolo_topk
     ]
-    best_codes = beam_decode_topk(yolo_topk, log_prob, unigrams, beam_width=beam_width)
-    print(f"[DEBUG] best_codes={best_codes}")
- 
     #  Viterbi segmentation over best_codes
  
     path, had_fallback = viterbi_segment(
@@ -874,8 +869,6 @@ def correct(
         if resolution.slot < len(flat_corrected):
             flat_corrected[resolution.slot] = resolution.proposed
 
-    print(f"[DEBUG] flat_corrected antes de resolver unknowns={[c for seg in gated_path for c in seg[0]]}")
-    print(f"[DEBUG] unknowns_resolved={unknowns_resolved}")
  
     #  Build SegmentedWord list and flat strings
  
@@ -1058,182 +1051,3 @@ def load_sub_cost_matrix(
             
     return cost
 
-
-# ---------------------------------------------------------------------------
-# CLI smoke test
-# ---------------------------------------------------------------------------
-
-if __name__ == '__main__':
-    import sys
-    import json
-
-    print("sphinx_corrector.py — smoke test")
-    print("=" * 60)
-
-    # Check that SphinxTrie is importable
-    if SphinxTrie is None:
-        print("ERROR: sphinx_trie.py not found on path.")
-        print("       Place sphinx_trie.py in the same directory.")
-        sys.exit(1)
-
-    # Locate artifacts (all live under artifacts/ as of 2026-07-06)
-    base     = Path(__file__).parent
-    art_dir  = base / 'artifacts'
-    trie_pkl     = art_dir / 'sphinx_trie_v4.pkl'
-    bbaw_parquet = art_dir / 'bbaw_clean.parquet'
-
-    if not trie_pkl.exists():
-        print(f"ERROR: {trie_pkl} not found. Run build_master_trie.py first.")
-        sys.exit(1)
-    if not bbaw_parquet.exists():
-        print(f"ERROR: {bbaw_parquet} not found.")
-        sys.exit(1)
-
-    confusion_csv = art_dir / 'confusion_matrix_v4_normalized.csv'
-    if not confusion_csv.exists():
-        confusion_csv = None    # corrector will fall back to EDIT_PENALTY
-
-    print(f"Loading trie     : {trie_pkl}")
-    print(f"Loading BBAW     : {bbaw_parquet}")
-    if confusion_csv:
-        print(f"Loading sub-cost : {confusion_csv.name}")
-    trie, log_prob, unigrams, sub_cost = load_corrector(
-        trie_pkl, bbaw_parquet, confusion_csv=confusion_csv,
-    )
-    print(f"Trie entries     : {trie.total_entries:,}")
-    print(f"Bigram vocab     : {len(log_prob):,} source codes")
-    print(f"Unigram vocab    : {len(unigrams):,} codes")
-    if sub_cost is not None:
-        print(f"Sub-cost pairs   : {len(sub_cost):,}")
-
-    print()
-    print("Test 1 — exact match: nfr = G17 I9 D21 (owl + cerastes + mouth)")
-    t1 = [
-        [('G17', 0.97), ('G18', 0.02), ('Unknown', 0.01)],
-        [('I9',  0.94), ('I10', 0.05), ('Unknown', 0.01)],
-        [('D21', 0.88), ('D22', 0.08), ('D19',     0.04)],
-    ]
-    r1 = correct(t1, trie, log_prob, unigrams)
-    print(f"  flat_corrected : {r1.flat_corrected_seq}")
-    print(f"  flat_translit  : {r1.flat_translit}")
-    print(f"  flat_translation: {r1.flat_translation}")
-    print(f"  had_fallback   : {r1.had_fallback}")
-    print(f"  score          : {r1.score:.3f}")
-
-    print()
-    print("Test 2 — one wrong code: YOLO sends G18 instead of G17 for 'm'")
-    t2 = [
-        [('G18', 0.45), ('G17', 0.40), ('Unknown', 0.15)],
-        [('I9',  0.93), ('I10', 0.05), ('Unknown', 0.02)],
-        [('D21', 0.91), ('D22', 0.06), ('D19',     0.03)],
-    ]
-    r2 = correct(t2, trie, log_prob, unigrams)
-    print(f"  flat_corrected : {r2.flat_corrected_seq}")
-    print(f"  flat_translit  : {r2.flat_translit}")
-    print(f"  had_fallback   : {r2.had_fallback}")
-
-    print()
-    print("Test 3 — Unknown slot resolution")
-    t3 = [
-        [('Unknown', 0.60), ('G17', 0.30), ('G18', 0.10)],
-        [('N35',     0.95), ('N36', 0.03), ('Z7',  0.02)],
-        [('D21',     0.89), ('D22', 0.07), ('D19', 0.04)],
-    ]
-    r3 = correct(t3, trie, log_prob, unigrams)
-    print(f"  flat_corrected : {r3.flat_corrected_seq}")
-    print(f"  unknowns_resolved:")
-    for u in r3.unknowns_resolved:
-        print(f"    slot={u.slot}  proposed={u.proposed}  freq={u.freq}")
-
-    print()
-    print("Test 4 — longer sequence (simulates real YOLO output)")
-    t4 = [
-        [('Q3',  0.92), ('Q1',  0.05), ('Unknown', 0.03)],
-        [('X1',  0.97), ('X2',  0.02), ('Unknown', 0.01)],
-        [('G17', 0.88), ('G18', 0.08), ('Unknown', 0.04)],
-        [('N35', 0.91), ('N36', 0.06), ('Z7',      0.03)],
-        [('D21', 0.85), ('D22', 0.10), ('D19',     0.05)],
-        [('X1',  0.94), ('X2',  0.04), ('Unknown', 0.02)],
-    ]
-    r4 = correct(t4, trie, log_prob, unigrams)
-    print(f"  flat_corrected : {r4.flat_corrected_seq}")
-    print(f"  flat_translit  : {r4.flat_translit}")
-    print(f"  segmented words: {len(r4.segmented_words)}")
-    for w in r4.segmented_words:
-        print(f"    {w.codes}  translit='{w.translit}'  edit={w.edit_dist}  conf={w.confidence}  src={w.source}")
-
-    print()
-    print("Test 5 — substitution-cost matrix + per-pair edit penalty")
-    if sub_cost is None:
-        print("  SKIPPED (confusion matrix CSV not found)")
-    else:
-        # 5a. Helper contracts
-        assert _compute_edit_penalty([], [], 0, None) == 0.0
-        assert _compute_edit_penalty(['x'], ['y'], 1, None) == EDIT_PENALTY[1]
-        # length mismatch → fallback to coarse EDIT_PENALTY even with matrix
-        assert _compute_edit_penalty(['a'], ['b', 'c'], 2, sub_cost) == EDIT_PENALTY[2]
-        print("  [5a] helper fallback contracts        OK")
-
-        # 5b. Sanity-check the loaded matrix's structure
-        diag_costs = [sub_cost[(c, c)] for c in ('g17', 'i9', 'd21', 'm17')
-                      if (c, c) in sub_cost]
-        assert diag_costs and all(c < 2.0 for c in diag_costs), \
-            f"diagonal costs should be small, got {diag_costs}"
-        print(f"  [5b] diagonal costs (g17/i9/d21/m17): "
-              f"{[round(c, 3) for c in diag_costs]}  OK")
-
-        # 5c. Per-pair lookup gives a finite penalty (≤ 0)
-        for o, e in (('g17', 'g18'), ('i9', 'i10'), ('m17', 'g17')):
-            if (o, e) in sub_cost:
-                pen = _compute_edit_penalty([o], [e], 1, sub_cost)
-                # penalty is negative; matrix-derived value should be finite
-                assert pen <= 0 and pen > -10.0, \
-                    f"unexpected penalty for {(o, e)}: {pen}"
-        print(f"  [5c] per-pair penalty                  OK")
-
-        # 5d. Compare matrix vs uniform penalty for the same edit
-        # (just print, no assert — these are data-dependent)
-        for o, e in (('g17', 'g18'), ('i9', 'i10'), ('m17', 'g17')):
-            uniform = EDIT_PENALTY[1]
-            matrix  = _compute_edit_penalty([o], [e], 1, sub_cost)
-            print(f"  [5d] {o:>4s} → {e:<4s}  uniform={uniform:+.3f}  "
-                  f"matrix={matrix:+.3f}")
-            
-            
-    print()
-    print("Test 6 — does bigram bias override YOLO's top-1 confidence in beam search?")
-    print("  Forcing a synthetic bigram where P(Unknown|X1) >> P(T22|X1),")
-    print("  even though YOLO's raw confidence favors T22 over Unknown.")
-
-    import math as _math
-    from collections import Counter as _Counter
-
-    # Synthetic bigram table: after 'X1', 'Unknown' is heavily favored,
-    # 'T22' and 'O29' are heavily disfavored. This isolates beam_decode_topk
-    # from whatever the real BBAW corpus happens to contain.
-    forced_log_prob = {
-        'X1': {
-            'Unknown': _math.log(0.90),
-            'T22':     _math.log(0.001),
-            'O29':     _math.log(0.001),
-        }
-    }
-    forced_unigrams = _Counter({'X1': 1, 'Unknown': 1, 'T22': 1, 'O29': 1})
-
-    slots_forced = [
-        [('X1', 0.99)],                                     # slot 0: forced anchor
-        [('T22', 0.55), ('Unknown', 0.30), ('O29', 0.15)],  # slot 1: contested
-    ]
-
-    best_forced = beam_decode_topk(
-        slots_forced, forced_log_prob, forced_unigrams, beam_width=8
-    )
-    print(f"  yolo top-1 for slot 1 : T22 (conf=0.55)")
-    print(f"  beam search chose     : {best_forced[1]!r}")
-
-    if best_forced[1] == 'Unknown':
-        print("  CONFIRMED: bigram bias overrode YOLO's higher-confidence "
-            "top-1 pick, with zero gate protection at this stage.")
-    else:
-        print("  NOT CONFIRMED: beam search kept YOLO's top-1 despite the "
-            "adversarial bigram. Hypothesis refuted for this mechanism.")

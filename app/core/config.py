@@ -12,11 +12,11 @@ class Settings(BaseSettings):
         
     # Pipeline artifacts (paths relative to repo root by default)
         
-    onnx_path        : Path = Path('artifacts/best_model_v4.onnx')
-    class_map        : Path = Path('artifacts/class_map50_v4.json')
+    onnx_path        : Path = Path('artifacts/best_model_v9.onnx')
+    class_map        : Path = Path('artifacts/class_map50_v9.json')
     trie_pkl         : Path = Path('artifacts/sphinx_trie_v4.pkl')
     bbaw_parquet     : Path = Path('artifacts/bbaw_clean.parquet')
-    confusion_csv    : Path = Path('artifacts/confusion_matrix_v4_normalized.csv')
+    confusion_csv    : Path = Path('artifacts/confusion_matrix_v9_normalized.csv')
  
     
     # YOLO / ONNX inference parameters
@@ -51,7 +51,7 @@ class Settings(BaseSettings):
 
     # Metadata
 
-    pipeline_version : str   = 'v4'
+    pipeline_version : str   = 'v9'
  
     model_config = SettingsConfigDict(
         env_file        = '.env',

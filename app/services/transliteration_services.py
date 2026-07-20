@@ -170,7 +170,6 @@ ARCHAEOLOGICAL CONTEXT (fields marked 'unknown' were not supplied by the user �
 Transliterate and gloss this segment. JSON only."""
 
 
-
 # Service (port of segement_into_chunck.transliterate_wall)
 class TransliterationService:
     """Chunk the corrected sequence, call the LLM per chunk, assemble."""
@@ -193,16 +192,34 @@ class TransliterationService:
         confs = [slot[0][1] if slot else 0.0 for slot in outer['slots']]
         # corrected seq and slots are index-aligned; guard anyway
         if len(confs) != len(codes):
+            
             confs = (confs + [0.0] * len(codes))[:len(codes)]
 
-        cartouche_names = [
-            f"{c['translit']} — {c['english']} (interior: {' '.join(c['spelling'] or [])})"
-            for c in raw['cartouches'] if c.get('translit')
-        ]
+        cartouche_names = []
+        for c in raw['cartouches']:
+            if c.get('translit'):
+                cartouche_names.append(
+                    f"{c['translit']} — {c['english']} (interior: {' '.join(c['spelling'] or [])})"
+                )
+            elif c.get('n_members', 0) > 0:
+                raw_codes = ' '.join(
+                    slot[0][0] for slot in c.get('slots', []) if slot
+                )
+                if raw_codes:
+                    cartouche_names.append(
+                        f"[UNRESOLVED cartouche — raw signs detected but no confident "
+                        f"royal-name match: {raw_codes}]"
+                    )
+                    
+            else :
+                cartouche_names.append(f"[UNRESOLVED cartouche — no signs detected]")
+        
+        
         return self.transliterate_sequence(
             codes, confs, outer['boundary_hints'], cartouche_names,
             direction=raw['direction'], layout=raw['layout'], ctx=ctx,
         )
+        
 
     def transliterate_sequence(
         self,

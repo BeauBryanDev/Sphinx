@@ -13,3 +13,7 @@ class CartoucheOut(BaseModel):
     score         : Optional[float] = None
     aligned_codes : Optional[list[str]] = None
     verified      : Optional[bool]  = None
+    # Raw interior top-1 Gardiner codes in reading order. Present even when
+    # the royal-name match REFUSED (translit=None), so the client can still
+    # forward the signs to the LLM instead of dropping them silently.
+    interior_codes : Optional[list[str]] = None
