@@ -6,6 +6,18 @@ import { APP_DESCRIPTION, APP_NAME } from "@/constants";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/common/Button";
 import horusEye from "@/assets/horus_eye.webp";
+import ankh from "@/assets/ankh.svg";
+import amphora from "@/assets/amphora.svg";
+import pyramid from "@/assets/pyramid.svg";
+
+// Decorative icons flanking the Horus eye — rendered left-to-right on the
+// left side and mirrored (reversed order + horizontal flip) on the right
+// for perfect symmetry around the emblem.
+const FLANK_ICONS = [
+  { src: ankh, alt: "Ankh" },
+  { src: amphora, alt: "Amphora" },
+  { src: pyramid, alt: "Pyramid" },
+];
 
 export const Header = () => {
   const { toggleSidebar } = useApp();
@@ -19,13 +31,37 @@ export const Header = () => {
         </div>
       </div>
 
-      {/* Centered winged Horus eye emblem */}
-      <img
-        src={horusEye}
-        alt="Winged Horus eye"
-        className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-16 w-auto -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_3px_12px_rgba(180,120,30,0.5)] select-none md:h-20"
-        draggable={false}
-      />
+      {/* Centered winged Horus eye emblem, symmetrically flanked */}
+      <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-3 md:gap-4">
+        <div className="hidden items-center gap-2 md:flex md:gap-3">
+          {FLANK_ICONS.map((icon) => (
+            <img
+              key={icon.alt}
+              src={icon.src}
+              alt={icon.alt}
+              className="h-7 w-auto opacity-80 drop-shadow-[0_2px_8px_rgba(180,120,30,0.4)] select-none lg:h-8"
+              draggable={false}
+            />
+          ))}
+        </div>
+        <img
+          src={horusEye}
+          alt="Winged Horus eye"
+          className="h-16 w-auto drop-shadow-[0_3px_12px_rgba(180,120,30,0.5)] select-none md:h-20"
+          draggable={false}
+        />
+        <div className="hidden items-center gap-2 md:flex md:gap-3">
+          {[...FLANK_ICONS].reverse().map((icon) => (
+            <img
+              key={icon.alt}
+              src={icon.src}
+              alt={icon.alt}
+              className="h-7 w-auto -scale-x-100 opacity-80 drop-shadow-[0_2px_8px_rgba(180,120,30,0.4)] select-none lg:h-8"
+              draggable={false}
+            />
+          ))}
+        </div>
+      </div>
 
       <div className="relative z-20 flex items-center gap-3 pt-3">
         <Button

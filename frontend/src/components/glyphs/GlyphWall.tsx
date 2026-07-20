@@ -32,14 +32,14 @@ const GlyphCell = ({ code }: GlyphCellProps) => {
   return (
     <span
       title={glyph ? code : "Undetected sign (lacuna)"}
-      className={`flex h-11 w-11 items-center justify-center rounded border ${
+      className={`flex h-14 w-14 items-center justify-center rounded border ${
         glyph
           ? "border-amber-600/40 bg-stone-950/70 hover:border-amber-400/70"
           : "border-stone-600/50 bg-stone-800/50"
       } transition-colors`}
     >
       {glyph ? (
-        <span className="font-hieroglyph glyph-gold text-[26px]">{glyph}</span>
+        <span className="font-hieroglyph glyph-gold text-[34px]">{glyph}</span>
       ) : (
         <span className="text-sm text-stone-500">▯</span>
       )}

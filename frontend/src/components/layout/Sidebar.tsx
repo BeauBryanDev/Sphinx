@@ -8,6 +8,7 @@ import { cn } from "@/utils/cn";
 import type { PageKey } from "@/types";
 import sphinxMaster from "@/assets/pharaoh_mask.webp";
 import scarab from "@/assets/golden_scarab.webp";
+import leg from "@/assets/leg.svg";
 
 interface SidebarProps {
   onNavigate?: (page: PageKey) => void;
@@ -102,6 +103,13 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
         <div className="mt-2 text-[10px] uppercase tracking-[0.3em]">
           Pro AI Vision
         </div>
+        <img
+          src={leg}
+          alt=""
+          aria-hidden="true"
+          className="mt-3 h-8 w-auto opacity-70 select-none"
+          draggable={false}
+        />
       </div>
     </aside>
   );

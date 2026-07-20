@@ -317,7 +317,7 @@ class SphinxPipeline:
                 for slot in slots]
 
 
-# CLI smoke test
+# Thin CLI — prints a run summary; all tests live in tests/ (pytest)
 
 def _summarize(result: dict) -> None:
     print(f"layout={result['layout']}  direction={result['direction']}  "
@@ -341,7 +341,12 @@ def _summarize(result: dict) -> None:
 
 
 def main():
-    img = sys.argv[1] if len(sys.argv) > 1 else 'test_image_vn5.png'
+    # No default image: test_image_vn5.png is CONTAMINATED (CLAUDE.md
+    # fragile breakpoint #8) — always require an explicit path.
+    if len(sys.argv) < 2:
+        sys.exit('usage: python pipeline.py <image> '
+                 '(e.g. Unas1c.jpg, image_2_test.jpg)')
+    img = sys.argv[1]
     if not Path(img).exists():
         sys.exit(f'image not found: {img}')
     print(f"Loading pipeline...")

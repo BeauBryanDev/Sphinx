@@ -291,7 +291,7 @@ export const GlyphDecoder = ({ controller }: GlyphDecoderProps = {}) => {
                     {line.map((code, j) => (
                       <span
                         key={j}
-                        className={`rounded px-1.5 py-0.5 font-mono text-[11px] ${
+                        className={`rounded px-2 py-0.5 font-mono text-sm ${
                           code === "Unknown"
                             ? "border border-stone-600/60 bg-stone-800/60 text-stone-400"
                             : "border border-amber-700/50 bg-amber-950/60 text-amber-200"
