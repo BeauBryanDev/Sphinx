@@ -369,6 +369,66 @@ export const GlyphDecoder = ({ controller }: GlyphDecoderProps = {}) => {
             {/* 6. Sign-frequency bar chart — basic detection stats. */}
             <SignFrequencyChart result={result} />
 
+            {/* 7. Cross-check invitation. Lives here rather than under the
+                sign-confidence table, which grows unbounded on dense walls and
+                buries it. The DETECTION is what these sources verify sign by
+                sign; the transliteration and gloss are an LLM reading and
+                deliberately out of scope. */}
+            <div className="mt-6 rounded-xl border-2 border-amber-700/60 bg-stone-950/50 p-4">
+              <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-amber-300/90">
+                𓂀 Verify the detection
+              </h4>
+              <p className="mb-3 text-[11px] leading-relaxed text-amber-500/80">
+                Don&apos;t take our word for it — check the{" "}
+                <span className="text-amber-300/90">sign detection</span> above
+                against an independent source of truth. (The transliteration and
+                English translation are a language model&apos;s reading, not a
+                verified one.)
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <a
+                  href="https://hieroglyphs.ai/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex flex-1 items-center justify-center gap-2.5 rounded-xl border-2 border-amber-600/70 bg-gradient-to-b from-amber-900/60 to-stone-900/80 px-5 py-3.5 text-sm font-semibold uppercase tracking-[0.18em] text-amber-200 shadow-inner transition-colors hover:border-amber-400 hover:text-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-500/60"
+                >
+                  <span
+                    className="font-hieroglyph text-2xl leading-none"
+                    aria-hidden="true"
+                  >
+                    𓂀
+                  </span>
+                  Validate
+                  <span className="text-xs text-amber-500/70" aria-hidden="true">
+                    ↗
+                  </span>
+                  <span className="sr-only">
+                    on Hieroglyphs.ai (opens a new tab)
+                  </span>
+                </a>
+                <a
+                  href="https://en.wikipedia.org/wiki/Gardiner%27s_sign_list"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex flex-1 items-center justify-center gap-2.5 rounded-xl border-2 border-amber-700/50 bg-stone-900/70 px-5 py-3.5 text-sm font-semibold uppercase tracking-[0.18em] text-amber-300/90 shadow-inner transition-colors hover:border-amber-500/80 hover:text-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-500/60"
+                >
+                  <span
+                    className="font-hieroglyph text-2xl leading-none"
+                    aria-hidden="true"
+                  >
+                    𓏛
+                  </span>
+                  Check by Yourself
+                  <span className="text-xs text-amber-500/70" aria-hidden="true">
+                    ↗
+                  </span>
+                  <span className="sr-only">
+                    on Gardiner&apos;s sign list, Wikipedia (opens a new tab)
+                  </span>
+                </a>
+              </div>
+            </div>
+
             <p className="mt-3 text-center text-[10px] uppercase tracking-[0.25em] text-amber-500/80">
               Detector confidence {formatConfidence(result.confidence)}
             </p>

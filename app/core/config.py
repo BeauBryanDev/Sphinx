@@ -46,8 +46,10 @@ class Settings(BaseSettings):
     # openai_api_key reads OPENAI_API_KEY from .env; empty = feature disabled
     openai_api_key      : str   = ''
     openai_model        : str   = 'gpt-4o'
-    translit_max_signs  : int   = 20     # max Gardiner codes per LLM chunk
-    translit_temperature: float = 0.1    # low — consistency over creativity
+    translit_max_signs  : int   = 40     # max Gardiner codes per LLM chunk
+                                         #   (raised from 20 2026-09-08: longer
+                                         #    segments = more grammar per call)
+    translit_temperature: float = 0.25   # low, but not flat — 0.1 froze the prose
 
     # Debug: dump the exact system + per-chunk user prompts + raw LLM
     # replies to debug_prompts/ (SPHINX_DEBUG_PROMPTS=1 in .env). Payload
