@@ -1,0 +1,183 @@
+# ============================================================
+# SphinxEyes — basic CI
+#
+# Runs on every push and pull request targeting master.
+#
+# Note on artifacts: `artifacts/` is gitignored (the v9 ONNX model
+# alone is 102 MB), so CI has no model, trie or parquet. The pytest
+# fixtures in tests/conftest.py skip cleanly when those files are
+# absent, and the 3 e2e tests are marked `slow` and deselected here.
+# CI therefore validates code, contracts and the frontend build —
+# not detector accuracy, which is measured locally on the fixtures.
+# ============================================================
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+# A new push to the same branch cancels the previous run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.13"
+  NODE_VERSION: "20"
+
+jobs:
+  # ----------------------------------------------------------
+  # 1. Backend unit tests — the fast suite (no ONNX, < 10 s).
+  # ----------------------------------------------------------
+  backend-tests:
+    name: Backend tests (pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run fast test suite
+        # -m "not slow" deselects the 3 e2e tests that need the ONNX model.
+        # Artifact-backed fixtures (corrector) skip themselves in CI.
+        run: pytest -m "not slow" -q --cov=app --cov-report=term-missing
+        env:
+          # Both LLM services must degrade gracefully without a key —
+          # leaving this empty is part of what the suite asserts.
+          OPENAI_API_KEY: ""
+
+  # ----------------------------------------------------------
+  # 2. Static analysis — syntax/undefined-name errors + types.
+  # ----------------------------------------------------------
+  lint:
+    name: Lint & type-check (ruff + mypy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff==0.14.2 mypy==1.19.0
+
+      - name: Ruff — real errors only (blocking)
+        # E9 syntax, F63 bad comparisons, F7 misplaced statements,
+        # F82 undefined names. These are bugs, never style opinions.
+        run: ruff check . --select=E9,F63,F7,F82 --output-format=github
+
+      - name: Ruff — full style pass (advisory)
+        continue-on-error: true
+        run: ruff check . --output-format=github
+
+      - name: Mypy on the FastAPI app (advisory)
+        # The repo has no type-clean baseline yet; report, don't gate.
+        continue-on-error: true
+        run: mypy app --ignore-missing-imports --no-strict-optional
+
+  # ----------------------------------------------------------
+  # 3. Frontend — type-check and production build.
+  # ----------------------------------------------------------
+  frontend:
+    name: Frontend build (tsc + vite)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Production build
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: http://localhost:8000
+
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 7
+
+  # ----------------------------------------------------------
+  # 4. Repo hygiene — keep secrets and heavy binaries out of git.
+  # ----------------------------------------------------------
+  hygiene:
+    name: Repo hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: No secret files committed
+        run: |
+          if git ls-files --error-unmatch agent_token.txt .env 2>/dev/null; then
+            echo "::error::A secret file is tracked by git — remove it and rotate the credential."
+            exit 1
+          fi
+          echo "No tracked secret files."
+
+      - name: No model weights committed
+        # artifacts/ is gitignored on purpose; a stray .onnx/.pt bloats
+        # the repo permanently once it lands in history.
+        run: |
+          weights=$(git ls-files -- '*.onnx' '*.pt' '*.pkl' || true)
+          if [ -n "$weights" ]; then
+            echo "::error::Model weights are tracked by git:"
+            echo "$weights"
+            exit 1
+          fi
+          echo "No tracked model weights."
+
+      - name: No oversized files (> 5 MB)
+        run: |
+          big=$(git ls-files -z \
+            | xargs -0 -r du -k 2>/dev/null \
+            | awk '$1 > 5120 {print $1 "KB\t" $2}' || true)
+          if [ -n "$big" ]; then
+            echo "::error::Files over 5 MB are tracked by git:"
+            echo "$big"
+            exit 1
+          fi
+          echo "No oversized tracked files."

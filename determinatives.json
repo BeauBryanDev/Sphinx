@@ -1,0 +1,1075 @@
+{
+  "source": "auto-mined from dickson.csv",
+  "criteria": "last_count>=5 AND last_rate>=0.5 OR last_count>=2 AND last_rate>=0.7",
+  "count": 178,
+  "codes": {
+    "Z2": {
+      "last_count": 762,
+      "total_count": 887,
+      "last_rate": 0.859,
+      "category": "plural_three"
+    },
+    "Z1": {
+      "last_count": 483,
+      "total_count": 827,
+      "last_rate": 0.584,
+      "category": "singular_or_ideogram"
+    },
+    "Y1": {
+      "last_count": 416,
+      "total_count": 648,
+      "last_rate": 0.642,
+      "category": "abstract"
+    },
+    "D54": {
+      "last_count": 310,
+      "total_count": 387,
+      "last_rate": 0.801,
+      "category": "motion"
+    },
+    "A2": {
+      "last_count": 270,
+      "total_count": 320,
+      "last_rate": 0.844,
+      "category": "man"
+    },
+    "D40": {
+      "last_count": 228,
+      "total_count": 269,
+      "last_rate": 0.848,
+      "category": "body_part"
+    },
+    "A1": {
+      "last_count": 225,
+      "total_count": 363,
+      "last_rate": 0.62,
+      "category": "man"
+    },
+    "O1": {
+      "last_count": 206,
+      "total_count": 317,
+      "last_rate": 0.65,
+      "category": "house_or_place"
+    },
+    "G37": {
+      "last_count": 175,
+      "total_count": 265,
+      "last_rate": 0.66,
+      "category": "bird"
+    },
+    "A24": {
+      "last_count": 150,
+      "total_count": 190,
+      "last_rate": 0.789,
+      "category": "man"
+    },
+    "Z3": {
+      "last_count": 113,
+      "total_count": 120,
+      "last_rate": 0.942,
+      "category": "plural_three_horizontal"
+    },
+    "F51": {
+      "last_count": 100,
+      "total_count": 130,
+      "last_rate": 0.769,
+      "category": "animal_part"
+    },
+    "M3": {
+      "last_count": 99,
+      "total_count": 161,
+      "last_rate": 0.615,
+      "category": "wood"
+    },
+    "Q7": {
+      "last_count": 81,
+      "total_count": 89,
+      "last_rate": 0.91,
+      "category": "furniture"
+    },
+    "B1": {
+      "last_count": 80,
+      "total_count": 118,
+      "last_rate": 0.678,
+      "category": "woman"
+    },
+    "A40": {
+      "last_count": 79,
+      "total_count": 94,
+      "last_rate": 0.84,
+      "category": "god"
+    },
+    "N25": {
+      "last_count": 76,
+      "total_count": 85,
+      "last_rate": 0.894,
+      "category": "foreign_land"
+    },
+    "N5": {
+      "last_count": 67,
+      "total_count": 115,
+      "last_rate": 0.583,
+      "category": "sun_or_time"
+    },
+    "S28": {
+      "last_count": 65,
+      "total_count": 84,
+      "last_rate": 0.774,
+      "category": "crown_or_dress"
+    },
+    "O39": {
+      "last_count": 58,
+      "total_count": 80,
+      "last_rate": 0.725,
+      "category": "building_or_place"
+    },
+    "O49": {
+      "last_count": 55,
+      "total_count": 67,
+      "last_rate": 0.821,
+      "category": "town_or_place"
+    },
+    "V1": {
+      "last_count": 52,
+      "total_count": 91,
+      "last_rate": 0.571,
+      "category": "rope_basket"
+    },
+    "F27": {
+      "last_count": 45,
+      "total_count": 55,
+      "last_rate": 0.818,
+      "category": "animal_part"
+    },
+    "P1": {
+      "last_count": 42,
+      "total_count": 52,
+      "last_rate": 0.808,
+      "category": "ship"
+    },
+    "G7": {
+      "last_count": 39,
+      "total_count": 44,
+      "last_rate": 0.886,
+      "category": "bird"
+    },
+    "E1": {
+      "last_count": 38,
+      "total_count": 60,
+      "last_rate": 0.633,
+      "category": "mammal"
+    },
+    "T30": {
+      "last_count": 38,
+      "total_count": 63,
+      "last_rate": 0.603,
+      "category": "weapon_tool"
+    },
+    "M1": {
+      "last_count": 35,
+      "total_count": 61,
+      "last_rate": 0.574,
+      "category": "plant"
+    },
+    "N31": {
+      "last_count": 35,
+      "total_count": 63,
+      "last_rate": 0.556,
+      "category": "celestial_or_geographical"
+    },
+    "D3": {
+      "last_count": 34,
+      "total_count": 50,
+      "last_rate": 0.68,
+      "category": "body_part"
+    },
+    "W10": {
+      "last_count": 34,
+      "total_count": 54,
+      "last_rate": 0.63,
+      "category": "vessel"
+    },
+    "N1": {
+      "last_count": 28,
+      "total_count": 50,
+      "last_rate": 0.56,
+      "category": "celestial_or_geographical"
+    },
+    "N8": {
+      "last_count": 28,
+      "total_count": 37,
+      "last_rate": 0.757,
+      "category": "celestial_or_geographical"
+    },
+    "Z8": {
+      "last_count": 26,
+      "total_count": 49,
+      "last_rate": 0.531,
+      "category": "stroke_or_marker"
+    },
+    "I12": {
+      "last_count": 25,
+      "total_count": 25,
+      "last_rate": 1.0,
+      "category": "reptile"
+    },
+    "A17": {
+      "last_count": 24,
+      "total_count": 45,
+      "last_rate": 0.533,
+      "category": "man"
+    },
+    "P5": {
+      "last_count": 24,
+      "total_count": 35,
+      "last_rate": 0.686,
+      "category": "ship"
+    },
+    "N2": {
+      "last_count": 23,
+      "total_count": 25,
+      "last_rate": 0.92,
+      "category": "celestial_or_geographical"
+    },
+    "W22": {
+      "last_count": 22,
+      "total_count": 33,
+      "last_rate": 0.667,
+      "category": "vessel"
+    },
+    "A7": {
+      "last_count": 21,
+      "total_count": 34,
+      "last_rate": 0.618,
+      "category": "man"
+    },
+    "Y2": {
+      "last_count": 19,
+      "total_count": 26,
+      "last_rate": 0.731,
+      "category": "writing_or_abstract"
+    },
+    "A30": {
+      "last_count": 18,
+      "total_count": 32,
+      "last_rate": 0.562,
+      "category": "man"
+    },
+    "W3": {
+      "last_count": 18,
+      "total_count": 32,
+      "last_rate": 0.562,
+      "category": "vessel"
+    },
+    "D12": {
+      "last_count": 17,
+      "total_count": 24,
+      "last_rate": 0.708,
+      "category": "body_part"
+    },
+    "D26": {
+      "last_count": 17,
+      "total_count": 20,
+      "last_rate": 0.85,
+      "category": "body_part"
+    },
+    "D53": {
+      "last_count": 16,
+      "total_count": 28,
+      "last_rate": 0.571,
+      "category": "body_part"
+    },
+    "V19": {
+      "last_count": 16,
+      "total_count": 26,
+      "last_rate": 0.615,
+      "category": "rope_basket"
+    },
+    "A13": {
+      "last_count": 15,
+      "total_count": 21,
+      "last_rate": 0.714,
+      "category": "man"
+    },
+    "A14": {
+      "last_count": 15,
+      "total_count": 19,
+      "last_rate": 0.789,
+      "category": "man"
+    },
+    "X4": {
+      "last_count": 15,
+      "total_count": 28,
+      "last_rate": 0.536,
+      "category": "bread_or_food"
+    },
+    "A28": {
+      "last_count": 14,
+      "total_count": 27,
+      "last_rate": 0.519,
+      "category": "man"
+    },
+    "Z6": {
+      "last_count": 14,
+      "total_count": 17,
+      "last_rate": 0.824,
+      "category": "stroke_or_marker"
+    },
+    "I14": {
+      "last_count": 13,
+      "total_count": 14,
+      "last_rate": 0.929,
+      "category": "reptile"
+    },
+    "D55": {
+      "last_count": 12,
+      "total_count": 13,
+      "last_rate": 0.923,
+      "category": "motion"
+    },
+    "I3": {
+      "last_count": 12,
+      "total_count": 19,
+      "last_rate": 0.632,
+      "category": "reptile"
+    },
+    "N4": {
+      "last_count": 12,
+      "total_count": 16,
+      "last_rate": 0.75,
+      "category": "celestial_or_geographical"
+    },
+    "O40": {
+      "last_count": 12,
+      "total_count": 12,
+      "last_rate": 1.0,
+      "category": "building_or_place"
+    },
+    "A15": {
+      "last_count": 11,
+      "total_count": 19,
+      "last_rate": 0.579,
+      "category": "man"
+    },
+    "A20": {
+      "last_count": 11,
+      "total_count": 13,
+      "last_rate": 0.846,
+      "category": "man"
+    },
+    "A55": {
+      "last_count": 11,
+      "total_count": 13,
+      "last_rate": 0.846,
+      "category": "man"
+    },
+    "D6": {
+      "last_count": 11,
+      "total_count": 16,
+      "last_rate": 0.688,
+      "category": "body_part"
+    },
+    "H5": {
+      "last_count": 11,
+      "total_count": 12,
+      "last_rate": 0.917,
+      "category": "bird_part"
+    },
+    "H8": {
+      "last_count": 11,
+      "total_count": 14,
+      "last_rate": 0.786,
+      "category": "bird_part"
+    },
+    "N34": {
+      "last_count": 11,
+      "total_count": 18,
+      "last_rate": 0.611,
+      "category": "celestial_or_geographical"
+    },
+    "R3": {
+      "last_count": 11,
+      "total_count": 12,
+      "last_rate": 0.917,
+      "category": "temple_object"
+    },
+    "A32": {
+      "last_count": 10,
+      "total_count": 11,
+      "last_rate": 0.909,
+      "category": "man"
+    },
+    "A53": {
+      "last_count": 10,
+      "total_count": 20,
+      "last_rate": 0.5,
+      "category": "man"
+    },
+    "A9": {
+      "last_count": 10,
+      "total_count": 19,
+      "last_rate": 0.526,
+      "category": "man"
+    },
+    "D7": {
+      "last_count": 10,
+      "total_count": 11,
+      "last_rate": 0.909,
+      "category": "body_part"
+    },
+    "F44": {
+      "last_count": 10,
+      "total_count": 20,
+      "last_rate": 0.5,
+      "category": "animal_part"
+    },
+    "I13": {
+      "last_count": 10,
+      "total_count": 10,
+      "last_rate": 1.0,
+      "category": "reptile"
+    },
+    "W23": {
+      "last_count": 10,
+      "total_count": 18,
+      "last_rate": 0.556,
+      "category": "vessel"
+    },
+    "X6": {
+      "last_count": 10,
+      "total_count": 19,
+      "last_rate": 0.526,
+      "category": "bread_or_food"
+    },
+    "B3": {
+      "last_count": 9,
+      "total_count": 11,
+      "last_rate": 0.818,
+      "category": "woman"
+    },
+    "C7": {
+      "last_count": 9,
+      "total_count": 10,
+      "last_rate": 0.9,
+      "category": "god"
+    },
+    "D27": {
+      "last_count": 9,
+      "total_count": 16,
+      "last_rate": 0.562,
+      "category": "body_part"
+    },
+    "M15": {
+      "last_count": 9,
+      "total_count": 18,
+      "last_rate": 0.5,
+      "category": "plant"
+    },
+    "M33": {
+      "last_count": 9,
+      "total_count": 13,
+      "last_rate": 0.692,
+      "category": "plant"
+    },
+    "W4": {
+      "last_count": 9,
+      "total_count": 12,
+      "last_rate": 0.75,
+      "category": "vessel"
+    },
+    "A4": {
+      "last_count": 8,
+      "total_count": 12,
+      "last_rate": 0.667,
+      "category": "man"
+    },
+    "F7": {
+      "last_count": 8,
+      "total_count": 11,
+      "last_rate": 0.727,
+      "category": "animal_part"
+    },
+    "M43": {
+      "last_count": 8,
+      "total_count": 14,
+      "last_rate": 0.571,
+      "category": "plant"
+    },
+    "O24": {
+      "last_count": 8,
+      "total_count": 9,
+      "last_rate": 0.889,
+      "category": "building_or_place"
+    },
+    "O32": {
+      "last_count": 8,
+      "total_count": 12,
+      "last_rate": 0.667,
+      "category": "building_or_place"
+    },
+    "Q6": {
+      "last_count": 8,
+      "total_count": 13,
+      "last_rate": 0.615,
+      "category": "furniture"
+    },
+    "V16": {
+      "last_count": 8,
+      "total_count": 13,
+      "last_rate": 0.615,
+      "category": "rope_basket"
+    },
+    "W1": {
+      "last_count": 8,
+      "total_count": 16,
+      "last_rate": 0.5,
+      "category": "vessel"
+    },
+    "A21": {
+      "last_count": 7,
+      "total_count": 14,
+      "last_rate": 0.5,
+      "category": "man"
+    },
+    "D5": {
+      "last_count": 7,
+      "total_count": 9,
+      "last_rate": 0.778,
+      "category": "body_part"
+    },
+    "E17": {
+      "last_count": 7,
+      "total_count": 9,
+      "last_rate": 0.778,
+      "category": "mammal"
+    },
+    "E3": {
+      "last_count": 7,
+      "total_count": 10,
+      "last_rate": 0.7,
+      "category": "mammal"
+    },
+    "E31": {
+      "last_count": 7,
+      "total_count": 13,
+      "last_rate": 0.538,
+      "category": "mammal"
+    },
+    "N11": {
+      "last_count": 7,
+      "total_count": 12,
+      "last_rate": 0.583,
+      "category": "celestial_or_geographical"
+    },
+    "P10": {
+      "last_count": 7,
+      "total_count": 8,
+      "last_rate": 0.875,
+      "category": "ship"
+    },
+    "Q2": {
+      "last_count": 7,
+      "total_count": 7,
+      "last_rate": 1.0,
+      "category": "furniture"
+    },
+    "T2": {
+      "last_count": 7,
+      "total_count": 8,
+      "last_rate": 0.875,
+      "category": "weapon_tool"
+    },
+    "T7": {
+      "last_count": 7,
+      "total_count": 9,
+      "last_rate": 0.778,
+      "category": "weapon_tool"
+    },
+    "A19": {
+      "last_count": 6,
+      "total_count": 10,
+      "last_rate": 0.6,
+      "category": "man"
+    },
+    "A26": {
+      "last_count": 6,
+      "total_count": 6,
+      "last_rate": 1.0,
+      "category": "man"
+    },
+    "D49": {
+      "last_count": 6,
+      "total_count": 10,
+      "last_rate": 0.6,
+      "category": "body_part"
+    },
+    "E10": {
+      "last_count": 6,
+      "total_count": 6,
+      "last_rate": 1.0,
+      "category": "mammal"
+    },
+    "E12": {
+      "last_count": 6,
+      "total_count": 6,
+      "last_rate": 1.0,
+      "category": "mammal"
+    },
+    "E22": {
+      "last_count": 6,
+      "total_count": 6,
+      "last_rate": 1.0,
+      "category": "mammal"
+    },
+    "E28": {
+      "last_count": 6,
+      "total_count": 9,
+      "last_rate": 0.667,
+      "category": "mammal"
+    },
+    "F10": {
+      "last_count": 6,
+      "total_count": 10,
+      "last_rate": 0.6,
+      "category": "animal_part"
+    },
+    "F19": {
+      "last_count": 6,
+      "total_count": 9,
+      "last_rate": 0.667,
+      "category": "animal_part"
+    },
+    "G54": {
+      "last_count": 6,
+      "total_count": 9,
+      "last_rate": 0.667,
+      "category": "bird"
+    },
+    "O27": {
+      "last_count": 6,
+      "total_count": 6,
+      "last_rate": 1.0,
+      "category": "building_or_place"
+    },
+    "S2": {
+      "last_count": 6,
+      "total_count": 8,
+      "last_rate": 0.75,
+      "category": "crown_or_dress"
+    },
+    "A51": {
+      "last_count": 5,
+      "total_count": 8,
+      "last_rate": 0.625,
+      "category": "man"
+    },
+    "B2": {
+      "last_count": 5,
+      "total_count": 6,
+      "last_rate": 0.833,
+      "category": "woman"
+    },
+    "D10": {
+      "last_count": 5,
+      "total_count": 6,
+      "last_rate": 0.833,
+      "category": "body_part"
+    },
+    "D32": {
+      "last_count": 5,
+      "total_count": 10,
+      "last_rate": 0.5,
+      "category": "body_part"
+    },
+    "D44": {
+      "last_count": 5,
+      "total_count": 6,
+      "last_rate": 0.833,
+      "category": "body_part"
+    },
+    "D57": {
+      "last_count": 5,
+      "total_count": 6,
+      "last_rate": 0.833,
+      "category": "body_part"
+    },
+    "D9": {
+      "last_count": 5,
+      "total_count": 5,
+      "last_rate": 1.0,
+      "category": "body_part"
+    },
+    "E32": {
+      "last_count": 5,
+      "total_count": 6,
+      "last_rate": 0.833,
+      "category": "mammal"
+    },
+    "F9": {
+      "last_count": 5,
+      "total_count": 9,
+      "last_rate": 0.556,
+      "category": "animal_part"
+    },
+    "O18": {
+      "last_count": 5,
+      "total_count": 5,
+      "last_rate": 1.0,
+      "category": "building_or_place"
+    },
+    "R1": {
+      "last_count": 5,
+      "total_count": 5,
+      "last_rate": 1.0,
+      "category": "temple_object"
+    },
+    "S36": {
+      "last_count": 5,
+      "total_count": 7,
+      "last_rate": 0.714,
+      "category": "crown_or_dress"
+    },
+    "S4": {
+      "last_count": 5,
+      "total_count": 6,
+      "last_rate": 0.833,
+      "category": "crown_or_dress"
+    },
+    "X3": {
+      "last_count": 5,
+      "total_count": 5,
+      "last_rate": 1.0,
+      "category": "bread_or_food"
+    },
+    "B5": {
+      "last_count": 4,
+      "total_count": 4,
+      "last_rate": 1.0,
+      "category": "woman"
+    },
+    "E14": {
+      "last_count": 4,
+      "total_count": 5,
+      "last_rate": 0.8,
+      "category": "mammal"
+    },
+    "E25": {
+      "last_count": 4,
+      "total_count": 4,
+      "last_rate": 1.0,
+      "category": "mammal"
+    },
+    "F1": {
+      "last_count": 4,
+      "total_count": 4,
+      "last_rate": 1.0,
+      "category": "animal_part"
+    },
+    "G48": {
+      "last_count": 4,
+      "total_count": 4,
+      "last_rate": 1.0,
+      "category": "bird"
+    },
+    "N15": {
+      "last_count": 4,
+      "total_count": 5,
+      "last_rate": 0.8,
+      "category": "celestial_or_geographical"
+    },
+    "O20": {
+      "last_count": 4,
+      "total_count": 4,
+      "last_rate": 1.0,
+      "category": "building_or_place"
+    },
+    "O21": {
+      "last_count": 4,
+      "total_count": 4,
+      "last_rate": 1.0,
+      "category": "building_or_place"
+    },
+    "O26": {
+      "last_count": 4,
+      "total_count": 4,
+      "last_rate": 1.0,
+      "category": "building_or_place"
+    },
+    "S11": {
+      "last_count": 4,
+      "total_count": 5,
+      "last_rate": 0.8,
+      "category": "crown_or_dress"
+    },
+    "S21": {
+      "last_count": 4,
+      "total_count": 4,
+      "last_rate": 1.0,
+      "category": "crown_or_dress"
+    },
+    "S35": {
+      "last_count": 4,
+      "total_count": 5,
+      "last_rate": 0.8,
+      "category": "crown_or_dress"
+    },
+    "S6": {
+      "last_count": 4,
+      "total_count": 4,
+      "last_rate": 1.0,
+      "category": "crown_or_dress"
+    },
+    "A27": {
+      "last_count": 3,
+      "total_count": 3,
+      "last_rate": 1.0,
+      "category": "man"
+    },
+    "A54": {
+      "last_count": 3,
+      "total_count": 3,
+      "last_rate": 1.0,
+      "category": "man"
+    },
+    "D8": {
+      "last_count": 3,
+      "total_count": 4,
+      "last_rate": 0.75,
+      "category": "body_part"
+    },
+    "E15": {
+      "last_count": 3,
+      "total_count": 4,
+      "last_rate": 0.75,
+      "category": "mammal"
+    },
+    "E24": {
+      "last_count": 3,
+      "total_count": 3,
+      "last_rate": 1.0,
+      "category": "mammal"
+    },
+    "E30": {
+      "last_count": 3,
+      "total_count": 4,
+      "last_rate": 0.75,
+      "category": "mammal"
+    },
+    "E6": {
+      "last_count": 3,
+      "total_count": 3,
+      "last_rate": 1.0,
+      "category": "mammal"
+    },
+    "E7": {
+      "last_count": 3,
+      "total_count": 3,
+      "last_rate": 1.0,
+      "category": "mammal"
+    },
+    "G42": {
+      "last_count": 3,
+      "total_count": 4,
+      "last_rate": 0.75,
+      "category": "bird"
+    },
+    "G6": {
+      "last_count": 3,
+      "total_count": 4,
+      "last_rate": 0.75,
+      "category": "bird"
+    },
+    "G8": {
+      "last_count": 3,
+      "total_count": 3,
+      "last_rate": 1.0,
+      "category": "bird"
+    },
+    "H1": {
+      "last_count": 3,
+      "total_count": 3,
+      "last_rate": 1.0,
+      "category": "bird_part"
+    },
+    "M37": {
+      "last_count": 3,
+      "total_count": 4,
+      "last_rate": 0.75,
+      "category": "plant"
+    },
+    "M41": {
+      "last_count": 3,
+      "total_count": 3,
+      "last_rate": 1.0,
+      "category": "plant"
+    },
+    "S1": {
+      "last_count": 3,
+      "total_count": 3,
+      "last_rate": 1.0,
+      "category": "crown_or_dress"
+    },
+    "S26": {
+      "last_count": 3,
+      "total_count": 3,
+      "last_rate": 1.0,
+      "category": "crown_or_dress"
+    },
+    "S37": {
+      "last_count": 3,
+      "total_count": 3,
+      "last_rate": 1.0,
+      "category": "crown_or_dress"
+    },
+    "S7": {
+      "last_count": 3,
+      "total_count": 3,
+      "last_rate": 1.0,
+      "category": "crown_or_dress"
+    },
+    "T17": {
+      "last_count": 3,
+      "total_count": 4,
+      "last_rate": 0.75,
+      "category": "weapon_tool"
+    },
+    "V10": {
+      "last_count": 3,
+      "total_count": 3,
+      "last_rate": 1.0,
+      "category": "rope_basket"
+    },
+    "V9": {
+      "last_count": 3,
+      "total_count": 3,
+      "last_rate": 1.0,
+      "category": "rope_basket"
+    },
+    "A29": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "man"
+    },
+    "A52": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "noble"
+    },
+    "C10": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "god"
+    },
+    "C9": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "god"
+    },
+    "E2": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "mammal"
+    },
+    "E26": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "mammal"
+    },
+    "G13": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "bird"
+    },
+    "G16": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "bird"
+    },
+    "G31": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "bird"
+    },
+    "G34": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "bird"
+    },
+    "I2": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "reptile"
+    },
+    "L3": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "insect"
+    },
+    "L4": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "insect"
+    },
+    "N22": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "celestial_or_geographical"
+    },
+    "O25": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "building_or_place"
+    },
+    "R16": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "temple_object"
+    },
+    "S18": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "crown_or_dress"
+    },
+    "S27": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "crown_or_dress"
+    },
+    "S45": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "crown_or_dress"
+    },
+    "U38": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "tool_craft"
+    },
+    "W21": {
+      "last_count": 2,
+      "total_count": 2,
+      "last_rate": 1.0,
+      "category": "vessel"
+    }
+  }
+}

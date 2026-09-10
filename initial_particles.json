@@ -1,0 +1,83 @@
+{
+  "source": "starter list — Middle Egyptian phrase-initial particles. Verify against Allen 14th ed. or Gardiner Egyptian Grammar §239 ff.",
+  "purpose": "Soft phrase-start prior in the SphinxTrie segmenter. When YOLO output contains one of these Gardiner sequences, the slot at its first sign is a strong candidate for a phrase boundary (the previous slot is end-of-previous-phrase).",
+  "particles": {
+    "jw": {
+      "gardiner": ["M17", "G43"],
+      "meaning": "is / circumstantial auxiliary",
+      "register": "narrative",
+      "notes": "Most common Middle Egyptian phrase-opener. Sometimes written M17 alone in late ME."
+    },
+    "jn": {
+      "gardiner": ["M17", "N35"],
+      "meaning": "by (agent marker) / interrogative",
+      "register": "all",
+      "notes": "Also marks rhetorical questions when phrase-initial."
+    },
+    "mk": {
+      "gardiner": ["Aa15", "V31"],
+      "meaning": "behold (sg.)!",
+      "register": "speech",
+      "alt_spellings": [["G17", "V31"]],
+      "notes": "Vocative-like attention marker. G17 V31 variant in some hands."
+    },
+    "mTn": {
+      "gardiner": ["Aa15", "V13", "N35"],
+      "meaning": "behold (pl.)!",
+      "register": "speech",
+      "alt_spellings": [["G17", "V13", "N35"]],
+      "notes": "Plural counterpart of mk. G17 variant common."
+    },
+    "jx": {
+      "gardiner": ["M17", "Aa1"],
+      "meaning": "may, then, so that (optative/sequential)",
+      "register": "all"
+    },
+    "nn": {
+      "gardiner": ["N35", "N35"],
+      "meaning": "not / there is not (negation)",
+      "register": "all",
+      "alt_spellings": [["M22"]],
+      "notes": "Phrase-initial negation. Single M22 (junction-of-river plant) sometimes used as logogram."
+    },
+    "HA": {
+      "gardiner": ["O4", "G1"],
+      "meaning": "would that! (wish particle)",
+      "register": "speech",
+      "alt_spellings": [["O4"]],
+      "notes": "Some scribes drop the alef G1."
+    },
+    "wnt": {
+      "gardiner": ["E34", "N35", "X1"],
+      "meaning": "indeed / that (subordinator)",
+      "register": "all"
+    },
+    "jstw": {
+      "gardiner": ["M17", "S29", "X1", "G43"],
+      "meaning": "now (parenthetical)",
+      "register": "narrative"
+    },
+    "Hr_ntt": {
+      "gardiner": ["D2", "D21", "X1", "X1"],
+      "meaning": "because / since (subordinator)",
+      "register": "all",
+      "notes": "Often phrase-initial in subordinate clauses introducing causes."
+    },
+    "smwn": {
+      "gardiner": ["S29", "Aa15", "G43", "N35"],
+      "meaning": "perhaps",
+      "register": "speech"
+    },
+    "wnn": {
+      "gardiner": ["E34", "N35", "N35"],
+      "meaning": "exists / continuative auxiliary",
+      "register": "all",
+      "notes": "Often phrase-initial when introducing existential clauses."
+    }
+  },
+  "notes": [
+    "These are typical Middle Egyptian phrase-initial particles. Coverage is intentionally narrow — these are the strongest signals; rarer particles can be added later.",
+    "The segmenter should treat these as soft priors: when the YOLO sequence contains a particle's full Gardiner sequence at a position, score a phrase boundary just before it.",
+    "Some particles (jw, jn, mk, jx) are short (2 codes) and overlap phonetically with non-particle words. Use the boundary signal cumulatively, not deterministically."
+  ]
+}
