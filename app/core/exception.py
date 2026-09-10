@@ -1,10 +1,4 @@
-"""
-Global exception handling.
 
-Anything the routers don't catch lands here so the client always receives
-structured JSON, never a raw traceback. The full traceback goes to the
-server log with a correlation id the client can quote back.
-"""
 from __future__ import annotations
 
 import logging
