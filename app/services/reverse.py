@@ -1,18 +1,4 @@
-"""
-Retro-translation service: modern English -> Middle Egyptian.
 
-Pure LLM feature — the vision pipeline plays no part. The model works
-in the three staged steps of a composition exercise:
-  1. normalize the English into translatable Middle Egyptian semantics
-     (Egyptian has no word for 'internet'; it does for 'scribe');
-  2. compose real Middle Egyptian: VSO grammar, suffix pronouns,
-     honorific transposition, then the Leiden transliteration;
-  3. encode each word as Gardiner signs: phonograms + phonetic
-     complements + determinatives, as a scribe would spell it.
-
-Degrades gracefully like the other LLM services: no API key or any
-OpenAI failure returns a ReverseTranslationOut with `error` set.
-"""
 from __future__ import annotations
 
 import json
@@ -26,6 +12,19 @@ from app.schemas.reverse_translation import (
     ReverseTranslationOut,
     ReverseWord,
 )
+# Retro-translation service: modern English -> Middle Egyptian.
+
+# It is a LLM feature — the vision pipeline plays no part. The model works
+# in the three staged steps of a composition exercise:
+#   1. normalize the English into translatable Middle Egyptian semantics
+#      (Egyptian has no word for 'internet'; it does for 'scribe');
+#   2. compose real Middle Egyptian: VSO grammar, suffix pronouns,
+#      honorific transposition, then the Leiden transliteration;
+#   3. encode each word as Gardiner signs: phonograms + phonetic
+#      complements + determinatives, as a scribe would spell it.
+
+# Degrades gracefully like the other LLM services: no API key or any
+# OpenAI failure returns a ReverseTranslationOut with `error` set.
 
 logger = logging.getLogger('sphinxeyes.reverse')
 
@@ -106,8 +105,10 @@ def _clean_codes(codes: object) -> list[str]:
         c = str(c).strip()
         if _CODE_RE.match(c):
             out.append(c)
+            
         else:
             logger.warning(f'reverse: dropped malformed Gardiner code {c!r}')
+            
     return out
 
 
@@ -122,8 +123,12 @@ class ReverseTranslationService:
     def enabled(self) -> bool:
         return self._client is not None
 
-    def translate(self, text: str, register: str = 'unknown') -> ReverseTranslationOut:
+    def translate(self, text: str, 
+                  register: str = 'unknown'
+                  ) -> ReverseTranslationOut:
+        
         if not self.enabled:
+            
             return ReverseTranslationOut(
                 source_text=text, normalized_english='', transliteration='',
                 gardiner_codes=[], model=settings.openai_model,
@@ -140,9 +145,12 @@ class ReverseTranslationService:
                 temperature     = settings.translit_temperature,
                 response_format = {'type': 'json_object'},
             )
+            
             parsed = json.loads(response.choices[0].message.content)
+            
         except Exception as e:
             logger.exception('reverse translation LLM call failed')
+            
             return ReverseTranslationOut(
                 source_text=text, normalized_english='', transliteration='',
                 gardiner_codes=[], model=settings.openai_model,
@@ -150,9 +158,11 @@ class ReverseTranslationService:
             )
 
         words = []
+        
         for w in parsed.get('words', []) or []:
             if not isinstance(w, dict):
                 continue
+            
             words.append(ReverseWord(
                 english         = str(w.get('english', '')),
                 transliteration = str(w.get('transliteration', '')),
@@ -162,6 +172,7 @@ class ReverseTranslationService:
             ))
 
         flat = _clean_codes(parsed.get('gardiner_codes'))
+        
         if not flat and words:                      # fall back to per-word codes
             flat = [c for w in words for c in w.gardiner_codes]
 

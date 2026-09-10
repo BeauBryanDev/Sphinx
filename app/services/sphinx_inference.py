@@ -95,6 +95,7 @@ class InferenceService:
         )
 
     def _map(self, raw: dict) -> PredictResponse:
+        " Map the raw pipeline output to the schema. "
         outer_raw = raw['outer']
         outer = OuterOut(
             slots          = outer_raw['slots'],

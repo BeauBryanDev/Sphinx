@@ -1,21 +1,4 @@
-"""
-LLM transliteration + translation stage (Phase 6).
 
-English port of the prototype scripts `prompt2GPT.py` and
-`segement_into_chunck.py` (repo root), adapted to the real pipeline
-output shape:
-
-  - chunks are cut at the spatial layer's line boundaries
-    (`boundary_hints`) first, then at `max_signs`, so a chunk never
-    straddles a physical line of text;
-  - matched cartouches are injected as authoritative context (the
-    Needleman-Wunsch match against royal_names.json outranks anything
-    the LLM would guess from raw codes);
-  - per-sign confidence comes from the detector's top-1 slot scores.
-
-The service degrades gracefully: no API key, or any OpenAI failure,
-returns a TransliterationOut with `error` set — never breaks /predict/.
-"""
 from __future__ import annotations
 
 import json
@@ -32,8 +15,7 @@ from app.schemas.transliterations import (
 
 logger = logging.getLogger('sphinxeyes.transliteration')
 
-
-# Chunking (port of segement_into_chunck.segment_into_chunks)
+# LLM transliteration + translation stage (Phase 6).
 
 def segment_into_chunks(
     codes           : list[str],
@@ -48,73 +30,72 @@ def segment_into_chunks(
     """
     pairs = list(zip(codes, confidences))
     bounds = sorted(b for b in boundary_hints if 0 < b <= len(pairs))
+    
     if not bounds or bounds[-1] != len(pairs):
         bounds.append(len(pairs))
 
     chunks: list[list[tuple[str, float]]] = []
+    
     start = 0
+    
     for b in bounds:
+        
         line = pairs[start:b]
         # split an over-long line at max_signs
         for i in range(0, len(line), max_signs):
+            
             piece = line[i:i + max_signs]
+            
             if piece:
                 chunks.append(piece)
+                
         start = b
+        
     return chunks
 
 
-# Prompt (port of prompt2GPT.build_egyptologist_prompt)
-
 # The role/methodology half of the prompt. Static -> sent as the system
 # message (also lets OpenAI cache it across the per-chunk calls).
-SYSTEM_PROMPT = """You are an expert Egyptologist and philologist specializing in Middle Egyptian \
-(the classical language of Dynasties XI-XVIII, also used ceremonially long after). You read \
-hieroglyphic inscriptions from Gardiner sign codes and produce scholarly transliterations and \
-English glosses.
+SYSTEM_PROMPT = """You are a working Egyptologist producing a publishable reading of a Middle \
+Egyptian inscription from Gardiner sign codes. Deliver the best philological reading the evidence \
+supports — do not catalogue everything that might be wrong with the input.
 
-HOW THE INPUT WAS PRODUCED (important for judging its reliability):
-The Gardiner sequence comes from a computer-vision pipeline, not a human copyist:
-1. A YOLO detector recognizes individual signs on the photograph (each has a confidence score).
-2. A spatial algorithm reconstructs reading order (quadrat stacking, line breaks).
-3. A lexicon-based corrector (Viterbi over a dictionary trie + bigram model) may have already
-   substituted some low-confidence detections.
-4. Cartouches are matched against a verified royal-name lexicon (Beckerath) — when a royal name
-   is given, it is MORE reliable than the raw sign codes around it.
-Consequences you must handle:
-- Signs may be MISCLASSIFIED as visually similar signs. Frequent confusions of this detector:
-  G1 (vulture) <-> G5 (falcon) <-> G39 (duck); N5 (sun disc) <-> N33 (pellet) <-> Aa1 (placenta)
-  <-> O49 (town); X1 (bread loaf) <-> X8 (conical loaf); S29 (folded cloth) <-> O34 (door bolt);
-  W19 (milk jug) <-> W14 (water jar); M23 (sedge) <-> M22 (rush); D21 (mouth) <-> D4 (eye);
-  Y1 <-> Y2 (papyrus rolls); Z1 <-> Z4 (strokes). When a LOW or MED confidence sign yields
-  nonsense but one of its confusion partners yields coherent Middle Egyptian, prefer the partner
-  and say so in the notes.
-- A sign may be MISSING (detector miss) — small phonetic complements and determinatives are the
-  usual casualties. You may posit an omitted complement when the reading obviously requires it.
-- 'Unknown' tokens are undetected signs: treat them as lacunae, transliterate as [...].
-- Reading order is usually right but not guaranteed within a quadrat; minor transpositions
-  (e.g. honorific transposition of nTr / nsw / ra) should be restored silently.
+INPUT PROVENANCE
+The codes come from a computer-vision pipeline (YOLO detector -> spatial reading-order ->
+lexicon/Viterbi corrector -> royal-name matcher). The sequence is therefore a NOISY COPY —
+comparable to a worn wall read from a photograph — and you have full licence to emend it:
+- EMEND FREELY. Substitute a confusable sign, restore an omitted phonetic complement or
+  determinative, or fix a local transposition whenever it yields coherent Middle Egyptian.
+  Do it silently in the obvious cases; report only emendations that change the meaning.
+- Frequent confusions of this detector — treat as free substitutions, no justification needed:
+  G1<->G5<->G39 | N5<->N33<->Aa1<->O49 | X1<->X8 | S29<->O34 | W19<->W14 | M23<->M22 |
+  D21<->D4 | Y1<->Y2 | Z1<->Z4. Small complements and determinatives are the usual detector
+  misses — supply them where the word requires it.
+- 'Unknown' is an undetected sign, not a blank. Read through it: if the surrounding formula makes
+  the word certain, restore it in ( ); write [...] only when it is genuinely unrecoverable.
+- Honorific transposition (nTr, nsw, ra written first) is normal orthography — restore the
+  phonetic order silently. Reading order within a quadrat may also be locally scrambled.
+- A cartouche matched against the royal-name lexicon outranks every raw sign code around it.
 
-METHOD — work like a philologist, not a code mapper:
-1. Segment the sign string into words: identify uniliterals, biliterals, triliterals, phonetic
-   complements (do not transliterate a complement twice), determinatives (classify, never
-   pronounce), and logograms.
-2. Look for the high-frequency formulae of monumental texts and let them anchor the reading:
-   htp-di-nsw (offering formula), sA ra (son of Ra), nb tAwy (lord of the Two Lands),
-   nTr nfr (the good god), di anx (given life), mAa-xrw (true of voice), anx wDA snb,
-   nswt-bity (dual king), Dt / nHH (forever), epithets of deities and royal titulary.
-3. If a royal cartouche is identified, use it as the chronological and thematic anchor: titles
-   and epithets adjacent to a cartouche almost always belong to the standard titulary sequence.
-4. Use the archaeological context: a temple wall favours royal/divine formulae; a stela favours
-   the offering formula and filiation (X sA Y, mAat-xrw); pyramid texts favour Old Kingdom
-   spellings; a papyrus may be literary or administrative.
-5. Commit to ONE most-probable reading. Note real alternatives briefly instead of hedging.
+METHOD
+1. Segment into words: uniliterals, biliterals, triliterals, phonetic complements (never
+   transliterate a complement twice), determinatives (classify, never pronounce), logograms.
+2. Anchor on the formulae of monumental texts — Htp-dj-nsw, sA ra, nb tAwy, nTr nfr, dj anx,
+   mAa-xrw, anx wDA snb, nsw-bjtj, Dt / nHH, divine epithets, royal titulary. A sequence that
+   NEARLY matches a formula IS that formula; emend to it.
+3. Exploit the archaeological context and any adjacent cartouche — they fix period, orthography
+   and genre — and keep the reading consistent with the segments already transliterated.
+4. Commit to ONE reading, written the way an Egyptologist writes a translation: connected
+   English, not a chain of glosses. Name a genuine alternative in one clause and move on.
+
+Never refuse, never return empty fields, never answer that the sequence is too corrupt to read.
+If a segment is poor, give the most plausible reading you can and set confidence LOW.
 
 OUTPUT — JSON only, no preamble, exactly these keys:
 {
-  "transliteration": "Unified Leiden conventions (aA not aleph-glyph fallback; use . for suffixes, = for clitics, [...] for lacunae, ( ) for restored signs)",
-  "english_gloss": "~ one plain-English sentence, functional gloss for non-specialists",
-  "linguistic_notes": "max 2 sentences: key ambiguity, any confusion-pair substitution you made, notable grammar",
+  "transliteration": "Leiden conventions (aA, j, D, x, X, S, q; '.' before suffix pronouns, '=' for clitics, [...] lacuna, ( ) restored). Word-divided; never emit Gardiner codes here.",
+  "english_gloss": "The translation, in vivid, readable English — as many sentences as the segment needs. Your reader is an intelligent non-specialist who knows nothing about ancient Egypt, so render the sense of the line the way a good museum label or a literary translation does: idiomatic, concrete, never word-for-word, never a chain of glosses. Untranslated Egyptian words, Gardiner codes and bracket apparatus do NOT belong here. Where the text is formulaic, say what the formula MEANS rather than naming it.",
+  "linguistic_notes": "Up to 4 sentences of plain-English commentary for that same non-specialist: what the signs are doing (sound signs, silent picture-signs that classify a word, name-rings), any emendation that changed the meaning, any real alternative reading. Explain a technical term the first time you use it, or drop it. Be interesting — this is the part that makes the reading legible to someone outside the field.",
   "confidence": "HIGH|MEDIUM|LOW",
   "period_note": "one short remark tying the reading to the stated period/reign, or '' if context was unknown"
 }
@@ -130,6 +111,7 @@ def build_egyptologist_prompt(
     cartouche_names  : list[str],
     previous_context : str | None,
     chunk_info       : str,
+    full_sequence    : str = '',
 ) -> str:
     """Build the per-chunk USER message (the system message is static)."""
     signs = ' — '.join(
@@ -137,7 +119,7 @@ def build_egyptologist_prompt(
         for c, s in zip(codes, confidences)
     )
 
-    def h(v: str) -> str:                     # human-readable context value
+    def h(v: str) -> str:  # human-readable context value
         # blank/whitespace (client sent '' after the user erased a field)
         # must read as 'unknown', not an empty line the LLM could misread
         return (v or '').strip().replace('_', ' ') or 'unknown'
@@ -159,6 +141,13 @@ def build_egyptologist_prompt(
             'is likely; do not invent a specific king):\n  '
             + '\n  '.join(unresolved))
     cartouche_block = '\n- '.join(parts) if parts else 'Contains cartouche: no'
+    # The whole inscription, so a segment is never read blind. Without this the
+    # LLM sees ~20 codes with no idea what surrounds them and hedges.
+    whole_block = (
+        f'\nTHE FULL INSCRIPTION (all segments, reading order, for orientation only '
+        f'— transliterate ONLY the segment above):\n{full_sequence}\n'
+        if full_sequence else ''
+    )
     previous_block = (
         f'\nPREVIOUS SEGMENTS of the same inscription (already transliterated '
         f'— keep names, epithets and topic consistent with them):\n'
@@ -179,7 +168,7 @@ ARCHAEOLOGICAL CONTEXT (fields marked 'unknown' were not supplied by the user �
 - Reading direction: {direction}
 - Layout: {layout}
 - {cartouche_block}
-{previous_block}
+{whole_block}{previous_block}
 Transliterate and gloss this segment. JSON only."""
 
 
@@ -245,8 +234,11 @@ class TransliterationService:
         layout          : str,
         ctx             : TextContext,
     ) -> TransliterationOut:
+        
         if not self.enabled:
+            
             return TransliterationOut(
+                
                 chunks=[], full_transliteration='', full_translation='',
                 model=settings.openai_model, n_chunks=0,
                 error='OPENAI_API_KEY not configured — transliteration disabled.',
@@ -255,6 +247,13 @@ class TransliterationService:
         chunks = segment_into_chunks(
             codes, confidences, boundary_hints,
             max_signs=settings.translit_max_signs,
+        )
+
+        # The whole inscription, segment by segment, so every per-chunk call
+        # can see what surrounds the ~20 codes it is asked to read.
+        full_sequence = '\n'.join(
+            f'  [{n + 1}] ' + ' '.join(c for c, _ in ch)
+            for n, ch in enumerate(chunks)
         )
 
         results: list[ChunkTransliteration] = []
@@ -269,6 +268,7 @@ class TransliterationService:
                 cartouche_names=cartouche_names,
                 previous_context=previous,
                 chunk_info=f'Segment {i + 1} of {len(chunks)}',
+                full_sequence=full_sequence,
             )
             try:
                 response = self._client.chat.completions.create(
@@ -281,8 +281,10 @@ class TransliterationService:
                     response_format = {'type': 'json_object'},
                 )
                 parsed = json.loads(response.choices[0].message.content)
+                
             except Exception as e:
                 logger.exception(f'LLM transliteration failed on chunk {i}')
+                
                 return TransliterationOut(
                     chunks=results,
                     full_transliteration=' | '.join(r.transliteration for r in results),

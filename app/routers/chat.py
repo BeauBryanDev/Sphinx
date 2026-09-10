@@ -1,9 +1,4 @@
-"""
-POST /chat/ — converse with Thot-Sphinx, guardian of temple knowledge.
 
-Stateless like the rest of the API: the client sends the conversation
-history each turn (PostgreSQL-backed sessions are Phase 6).
-"""
 from __future__ import annotations
 
 from typing import Literal
@@ -15,7 +10,10 @@ from app.services.sphinx_chat import ChatService
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
+# POST /chat/ — converse with Thot-Sphinx, guardian of temple knowledge.
 
+# Stateless like the rest of the API: the client sends the conversation
+# history each turn  — the LLM is stateless and remembers nothing.
 class ChatTurn(BaseModel):
     role    : Literal['user', 'assistant']
     content : str

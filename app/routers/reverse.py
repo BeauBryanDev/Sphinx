@@ -1,9 +1,4 @@
-"""
-POST /reverse/ — retro-translation: modern English -> Middle Egyptian.
 
-Pure LLM feature (GPT-4o composes the Egyptian; the CV pipeline is not
-involved). Stateless like the rest of the API.
-"""
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
@@ -16,6 +11,10 @@ from app.services.reverse import ReverseTranslationService
 
 router = APIRouter(prefix='/reverse', tags=['reverse'])
 
+# POST /reverse/ — retro-translation: modern English -> Middle Egyptian.
+
+# Pure LLM feature (GPT-4o composes the Egyptian; the CV pipeline is not
+# involved). Stateless like the rest of the API.
 
 @router.post('/', response_model=ReverseTranslationOut)
 async def reverse_translate(body: ReverseTranslateRequest) -> ReverseTranslationOut:

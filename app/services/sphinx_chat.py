@@ -1,11 +1,4 @@
-"""
-SphinxChat — conversational endpoint persona (Phase 6).
 
-Thot-Sphinx: a wise arcane creature fashioned by Thoth to stand as the
-sacred guardian of temple secrets and knowledge. Expert companion for
-everything Ancient Egypt. Same OpenAI account as the transliteration
-service; degrades gracefully when no API key is configured.
-"""
 from __future__ import annotations
 
 import logging
@@ -19,6 +12,13 @@ logger = logging.getLogger('sphinxeyes.chat')
 
 MAX_HISTORY_MESSAGES = 20      # keep the context window (and cost) bounded
 MAX_PROMPT_CHARS     = 4000
+
+# SphinxChat — conversational endpoint persona (Phase 6).
+
+# Thot-Sphinx: a wise arcane creature made by Thoth to stand as the
+# sacred guardian of temple secrets and knowledge. Expert companion for
+# everything Ancient Egypt. Same OpenAI account as the transliteration
+# service; degrades gracefully when no API key is configured.
 
 SPHINX_PERSONA = """You are Thot-Sphinx, a wise arcane creature created by Thoth himself to be \
 the sacred guardian of temple secrets and knowledge. Thoth granted you the wisdom of writing, and \
@@ -90,4 +90,7 @@ class ChatService:
                                         # transliterator's 0.1
         )
         reply = response.choices[0].message.content or ''
+        
+        
+        
         return reply, uuid.uuid4().hex

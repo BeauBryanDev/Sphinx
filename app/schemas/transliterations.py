@@ -1,11 +1,4 @@
-"""
-Pydantic contracts for the LLM transliteration stage (Phase 6).
 
-TextContext carries the archaeological metadata the user supplies about
-the uploaded image. EVERY field defaults to 'unknown' — a tourist who
-knows nothing about the artifact can still get a reading; an Egyptologist
-who fills everything in gets a much better one.
-"""
 from __future__ import annotations
 
 from typing import Literal, Optional
@@ -34,7 +27,12 @@ LocationType = Literal[
     'unknown', 'pyramid', 'temple', 'tomb', 'museum', 'open_site',
 ]
 
+# Pydantic contracts for the LLM transliteration stage (Phase 6).
 
+# TextContext carries the archaeological metadata the user supplies about
+# the uploaded image. EVERY field defaults to 'unknown' — a tourist who
+# knows nothing about the artifact can still get a reading; an Egyptologist
+# who fills everything in gets a much better one.
 class TextContext(BaseModel):
     """User-supplied archaeological context. All optional, all default unknown."""
     period          : Period       = 'unknown'

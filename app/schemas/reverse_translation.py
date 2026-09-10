@@ -1,11 +1,4 @@
-"""
-Schemas for the retro-translation feature (POST /reverse/):
-modern English -> Middle Egyptian (transliteration + Gardiner codes).
 
-The whole linguistic job is done by the LLM — the CV pipeline plays no
-part here. The response mirrors the LLM's staged output: grammar
-rendering, phonetic (Leiden) transliteration, then sign coding.
-"""
 from __future__ import annotations
 
 from typing import Literal, Optional
@@ -21,6 +14,12 @@ Register = Literal[
     'religious',      # hymn / offering formula style
 ]
 
+# Schemas for the retro-translation feature (POST /reverse/):
+# modern English -> Middle Egyptian (transliteration + Gardiner codes).
+
+# The whole linguistic job is done by the LLM  :: the CV pipeline plays no
+# part here. The response mirrors the LLM's staged output: grammar
+# rendering, phonetic (Leiden) transliteration, then sign coding.
 
 class ReverseTranslateRequest(BaseModel):
     text     : str = Field(..., min_length=1, max_length=1000,
